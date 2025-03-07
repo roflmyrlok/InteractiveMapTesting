@@ -1,12 +1,14 @@
-using System;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using UserService.API.Middleware;
 using UserService.API.Services;
 using UserService.Application.Extensions;
+using UserService.Infrastructure.Data;
 using UserService.Infrastructure.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -42,34 +44,51 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured")))
-    };
-});
+var jwtKey = builder.Configuration["Jwt:Key"] 
+    ?? throw new InvalidOperationException("JWT Key is not configured");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] 
+    ?? throw new InvalidOperationException("JWT Issuer is not configured");
+var jwtAudience = builder.Configuration["Jwt:Audience"] 
+    ?? throw new InvalidOperationException("JWT Audience is not configured");
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
 
 builder.Services.AddApplicationServices();
-
 builder.Services.AddInfrastructureServices(builder.Configuration);
-
 builder.Services.AddScoped<JwtAuthenticationService>();
 
 var app = builder.Build();
+
+// Automatic database migration
+using (var scope = app.Services.CreateScope())
+{
+    try 
+    {
+        var context = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+        
+        // Ensure the database is created and migrations are applied
+        await context.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+        throw;
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -87,3 +106,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Make the class partial to support testing
+public partial class Program { }
