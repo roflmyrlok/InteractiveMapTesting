@@ -5,36 +5,28 @@
 ```bash
 cd ci-cd
 
+# Copy .env example if .env doesn't exist
 cp .env.example .env
 
+# Make run script executable
 chmod +x run-local.sh
 
+# Start all services (PostgreSQL, pgAdmin, UserService)
 ./run-local.sh
 ```
 
 This script will:
 - Create a `.env` file from `.env.example` if one doesn't exist
-- Start PostgreSQL and pgAdmin in Docker containers
+- Start PostgreSQL, pgAdmin, and UserService in Docker containers
 - Configure the database with default credentials from .env
 
-```bash
-cd ../back/UserService
+## Accessing Services
 
-dotnet ef database update --project UserService.Infrastructure --startup-project UserService.API
-```
+### API Access
+- Swagger UI: http://localhost:5280/swagger
+- Base API URL: http://localhost:5280
 
-```bash
-# Navigate to the API project
-cd UserService.API
-
-# Run the application
-dotnet run
-```
-
-http://localhost:5280
-http://localhost:5280/swagger
-
-## Accessing PostgreSQL
+### Accessing PostgreSQL
 
 Using pgAdmin
 
@@ -45,12 +37,11 @@ Using pgAdmin
 3. Add a new server:
    - Name: UserService (or any name you prefer)
    - Connection tab:
-     - Host: postgres (or localhost if accessing outside Docker)
+     - Host: postgres
      - Port: 5432
      - Maintenance database: postgres
      - Username: postgres (or as configured in `.env`)
      - Password: postgres (or as configured in `.env`)
-
 
 ## Testing the API
 
@@ -84,13 +75,9 @@ curl -X POST "http://localhost:5280/api/Auth/login" \
 
 ```bash
 # Navigate to the ci-cd directory
-cd path/to/ci-cd
-
-# Stop the containers
+# Stop and remove all containers
 docker-compose -f docker-compose-local.yml down
-```
 
-To remove all data and start fresh:
-```bash
+# To remove all data and start fresh
 docker-compose -f docker-compose-local.yml down -v
 ```

@@ -30,6 +30,22 @@ services:
       - userservice-local-network
     restart: unless-stopped
 
+  # UserService application
+  userservice:
+    build:
+      context: ../back/UserService
+      dockerfile: Dockerfile
+    ports:
+      - "5280:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB:-userservice};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      - postgres
+    networks:
+      - userservice-local-network
+    restart: unless-stopped
+
 networks:
   userservice-local-network:
     driver: bridge

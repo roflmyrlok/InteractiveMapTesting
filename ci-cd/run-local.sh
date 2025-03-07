@@ -6,17 +6,5 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
-# Run PostgreSQL and pgAdmin locally with Docker
-docker-compose -f docker-compose-local.yml up -d postgres pgadmin
-
-# Wait for PostgreSQL to start
-echo "Waiting for PostgreSQL to start..."
-sleep 5
-
-# Apply migrations
-cd ../back/UserService
-dotnet ef database update --project UserService.Infrastructure --startup-project UserService.API
-
-# Run the application
-cd UserService.API
-dotnet run
+# Run PostgreSQL, pgAdmin, and UserService with Docker
+docker-compose -f docker-compose-local.yml up -d
