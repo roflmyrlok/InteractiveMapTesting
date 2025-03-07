@@ -6,3 +6,27 @@
 node_modules/
 dist/
 coverage/
+appsettings.Development.json
+
+
+# Add these lines to your .gitignore file
+
+# Environment files with secrets
+.env
+
+# Certificates and keys
+*.pfx
+*.key
+*.pem
+*.crt
+
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+
+logs/
+*.log
+
+# Docker volumes data
+**/postgres-data/
+**/postgres-data-local/
