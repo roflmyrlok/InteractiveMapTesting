@@ -34,7 +34,7 @@ docker compose up -d --build userservice
 
 # Build and start LocationService
 echo "Building and starting LocationService..."
-#docker compose up -d --build locationservice
+docker compose up -d --build locationservice
 
 echo "Building and starting ReviewService..."
 #docker compose up -d --build reviewservice

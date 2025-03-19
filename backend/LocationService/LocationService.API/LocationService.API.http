@@ -1,0 +1,6 @@
+@LocationService.API_HostAddress = http://localhost:5261
+
+GET {{LocationService.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
