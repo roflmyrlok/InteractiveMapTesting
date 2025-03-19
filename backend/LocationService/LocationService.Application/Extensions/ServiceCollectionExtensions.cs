@@ -12,13 +12,10 @@ namespace LocationService.Application.Extensions
 	{
 		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
 		{
-			// Register AutoMapper
 			services.AddAutoMapper(typeof(MappingProfile));
-            
-			// Register application services
+			
 			services.AddScoped<ILocationService, Services.LocationService>();
-            
-			// Register validators
+			
 			services.AddFluentValidationAutoValidation();
 			services.AddValidatorsFromAssemblyContaining<CreateLocationValidator>();
             

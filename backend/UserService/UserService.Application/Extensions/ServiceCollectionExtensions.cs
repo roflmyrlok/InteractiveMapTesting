@@ -11,13 +11,10 @@ namespace UserService.Application.Extensions
 	{
 		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
 		{
-			// Register AutoMapper
 			services.AddAutoMapper(typeof(MappingProfile));
-            
-			// Register application services
+			
 			services.AddScoped<IUserService, UserService.Application.Services.UserService>();
-            
-			// Register validators
+			
 			services.AddFluentValidationAutoValidation();
 			services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();
             

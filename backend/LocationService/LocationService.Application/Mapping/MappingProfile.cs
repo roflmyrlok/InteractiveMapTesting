@@ -8,7 +8,6 @@ namespace LocationService.Application.Mapping
 	{
 		public MappingProfile()
 		{
-			// Location Mappings
 			CreateMap<Location, LocationDto>()
 				.ForMember(dest => dest.Details, 
 					opt => opt.MapFrom(src => src.Details));
@@ -27,8 +26,7 @@ namespace LocationService.Application.Mapping
 
 			CreateMap<UpdateLocationDto, Location>()
 				.ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-
-			// Location Detail Mappings
+			
 			CreateMap<LocationDetail, LocationDetailDto>()
 				.ForMember(dest => dest.PropertyName, opt => opt.MapFrom(src => src.PropertyName))
 				.ForMember(dest => dest.PropertyValue, opt => opt.MapFrom(src => src.PropertyValue));

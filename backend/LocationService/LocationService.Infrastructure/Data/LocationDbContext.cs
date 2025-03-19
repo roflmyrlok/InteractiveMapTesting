@@ -15,7 +15,6 @@ namespace LocationService.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Location Configuration
             modelBuilder.Entity<Location>(entity =>
             {
                 entity.HasKey(l => l.Id);
@@ -44,15 +43,13 @@ namespace LocationService.Infrastructure.Data
 
                 entity.Property(l => l.PostalCode)
                     .HasMaxLength(20);
-
-                // Relationship with LocationDetails
+                
                 entity.HasMany(l => l.Details)
                     .WithOne(d => d.Location)
                     .HasForeignKey(d => d.LocationId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
-
-            // LocationDetail Configuration
+            
             modelBuilder.Entity<LocationDetail>(entity =>
             {
                 entity.HasKey(d => d.Id);
@@ -67,14 +64,12 @@ namespace LocationService.Infrastructure.Data
                 entity.Property(d => d.PropertyValue)
                     .IsRequired()
                     .HasMaxLength(500);
-
-                // Relationship with Location
+                
                 entity.HasOne(d => d.Location)
                     .WithMany(l => l.Details)
                     .HasForeignKey(d => d.LocationId)
                     .OnDelete(DeleteBehavior.Cascade);
-
-                // Unique constraint on LocationId and PropertyName
+                
                 entity.HasIndex(d => new { d.LocationId, d.PropertyName })
                     .IsUnique();
             });

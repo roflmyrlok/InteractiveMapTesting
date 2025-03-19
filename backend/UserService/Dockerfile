@@ -8,13 +8,13 @@ COPY . .
 # Restore dependencies using solution file with --force to ignore conflicts
 RUN dotnet restore UserService.sln --force
 
-# Build the solution
-RUN dotnet build UserService.sln -c Release --no-restore -o /app/build
+# Build the API project directly instead of the solution
+RUN dotnet build UserService.API/UserService.API.csproj -c Release --no-restore -o /app/build
 
 # Publish stage
 FROM build AS publish
 WORKDIR "/src"
-RUN dotnet publish UserService.sln -c Release --no-restore -o /app/publish /p:UseAppHost=false
+RUN dotnet publish UserService.API/UserService.API.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
 
 # Final stage - using SDK image to ensure migration tools are available
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS final

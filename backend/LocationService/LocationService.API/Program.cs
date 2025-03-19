@@ -7,116 +7,171 @@ using LocationService.API.Middleware;
 using LocationService.Application.Extensions;
 using LocationService.Infrastructure.Data;
 using LocationService.Infrastructure.Extensions;
+using LocationService.Infrastructure.Messaging;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddControllers();
-
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<LocationDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+public partial class Program
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Location Service API", Version = "v1" });
-    
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    public static void Main(string[] args)
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    });
+        CreateHostBuilder(args).Build().Run();
+    }
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder =>
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
+                webBuilder.UseStartup<Startup>();
+            })
+            .ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                config.AddEnvironmentVariables();
+            });
+}
 
-var jwtKey = builder.Configuration["Jwt:Key"] 
-    ?? throw new InvalidOperationException("JWT Key is not configured");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] 
-    ?? throw new InvalidOperationException("JWT Issuer is not configured");
-var jwtAudience = builder.Configuration["Jwt:Audience"] 
-    ?? throw new InvalidOperationException("JWT Audience is not configured");
+public class Startup
+{
+    private readonly IConfiguration _configuration;
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    public Startup(IConfiguration configuration)
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        _configuration = configuration;
+    }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddControllers();
+        services.AddLogging(configure => 
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
-    });
+            configure.AddConsole();
+            configure.AddDebug();
+        });
+        var connectionString = _configuration.GetConnectionString("DefaultConnection") 
+            ?? throw new InvalidOperationException("Connection string not configured");
+        services.AddDbContext<LocationDbContext>(options =>
+            options.UseNpgsql(connectionString));
 
-builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructureServices(builder.Configuration);
+        ConfigureRabbitMq(services);
 
-var app = builder.Build();
+        ConfigureJwtAuthentication(services);
 
-// Automatic database migration, TODO: separate
-using (var scope = app.Services.CreateScope())
-{
-    try 
-    {
-        var context = scope.ServiceProvider.GetRequiredService<LocationDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-        logger.LogInformation("Attempting to migrate database...");
+        services.AddEndpointsApiExplorer();
+        ConfigureSwagger(services);
         
-        await context.Database.MigrateAsync();
-        
-        logger.LogInformation("Database migration completed successfully.");
+        services.AddApplicationServices();
+        services.AddInfrastructureServices(_configuration);
     }
-    catch (Exception ex)
+
+    private void ConfigureRabbitMq(IServiceCollection services)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database. " +
-            "Ensure PostgreSQL is running and the connection string is correct. " +
-            $"Connection String: {connectionString}");
-        throw;
+        services.Configure<RabbitMqSettings>(options =>
+        {
+            options.HostName = _configuration["RabbitMq:HostName"] ?? "rabbitmq";
+            options.UserName = _configuration["RabbitMq:UserName"] ?? "guest";
+            options.Password = _configuration["RabbitMq:Password"] ?? "guest";
+            options.Port = int.Parse(_configuration["RabbitMq:Port"] ?? "5672");
+            options.ExchangeName = _configuration["RabbitMq:ExchangeName"] ?? "microservices";
+        });
+
+        try
+        {
+            services.AddSingleton<RabbitMqPublisher>();
+            services.AddHostedService<LocationValidationConsumer>();
+        }
+        catch (Exception ex)
+        {
+            var logger = services.BuildServiceProvider().GetRequiredService<ILogger<Startup>>();
+            logger.LogWarning(ex, "Failed to configure RabbitMQ services. The application will run without messaging capabilities.");
+        }
+    }
+
+    private void ConfigureJwtAuthentication(IServiceCollection services)
+    {
+        var jwtKey = _configuration["Jwt:Key"] 
+            ?? throw new InvalidOperationException("JWT Key is not configured");
+        var jwtIssuer = _configuration["Jwt:Issuer"] 
+            ?? throw new InvalidOperationException("JWT Issuer is not configured");
+        var jwtAudience = _configuration["Jwt:Audience"] 
+            ?? throw new InvalidOperationException("JWT Audience is not configured");
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                };
+            });
+    }
+
+    private void ConfigureSwagger(IServiceCollection services)
+    {
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Location Service API", Version = "v1" });
+            
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Description = "JWT Authorization header using the Bearer scheme",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT"
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+    }
+
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, LocationDbContext context, ILogger<Startup> logger)
+    {
+        try 
+        {
+            context.Database.Migrate();
+            logger.LogInformation("Database migration completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while migrating the database.");
+            throw;
+        }
+
+        if (env.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+        
+        app.UseCustomErrorHandling();
+
+        app.UseRouting();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+        });
     }
 }
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseCustomErrorHandling();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
-
-// Partial class to support testing
-public partial class Program { }

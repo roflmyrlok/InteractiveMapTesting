@@ -24,7 +24,7 @@ namespace LocationService.Infrastructure.Data
 			var optionsBuilder = new DbContextOptionsBuilder<LocationDbContext>();
 			var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-			optionsBuilder.UseNpgsql(connectionString); // Change to your DB provider if needed
+			optionsBuilder.UseNpgsql(connectionString);
 
 			return new LocationDbContext(optionsBuilder.Options);
 		}

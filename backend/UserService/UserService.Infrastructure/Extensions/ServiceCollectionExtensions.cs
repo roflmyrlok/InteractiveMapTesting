@@ -13,12 +13,10 @@ namespace UserService.Infrastructure.Extensions
 	{
 		public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
 		{
-			// Register DbContext
 			services.AddDbContext<UserDbContext>(options =>
 				options.UseNpgsql(
 					configuration.GetConnectionString("DefaultConnection"),
 					b => b.MigrationsAssembly(typeof(UserDbContext).Assembly.FullName)));
-			// Register repositories
 			services.AddScoped<IUserRepository, UserRepository>();
 
 			return services;

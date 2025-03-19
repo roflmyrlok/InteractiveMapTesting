@@ -5,10 +5,16 @@
 
 set -e
 
-# Create the microservices database
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<-EOSQL
-    CREATE DATABASE microservices;
-    GRANT ALL PRIVILEGES ON DATABASE microservices TO $POSTGRES_USER;
-EOSQL
+# Check if the database already exists
+DB_EXISTS=$(psql -U "$POSTGRES_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='microservices'")
 
-echo "Database created successfully!"
+if [ "$DB_EXISTS" != "1" ]; then
+    echo "Creating microservices database..."
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<-EOSQL
+        CREATE DATABASE microservices;
+        GRANT ALL PRIVILEGES ON DATABASE microservices TO $POSTGRES_USER;
+EOSQL
+    echo "Database created successfully!"
+else
+    echo "Database 'microservices' already exists. Skipping creation."
+fi

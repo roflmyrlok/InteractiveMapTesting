@@ -34,8 +34,7 @@ namespace LocationService.Infrastructure.Data.Configurations
 
             builder.Property(l => l.PostalCode)
                 .HasMaxLength(20);
-
-            // Define relationships
+            
             builder.HasMany(l => l.Details)
                 .WithOne(d => d.Location)
                 .HasForeignKey(d => d.LocationId)

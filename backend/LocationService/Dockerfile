@@ -8,13 +8,13 @@ COPY . .
 # Restore dependencies using solution file
 RUN dotnet restore LocationService.sln
 
-# Build the solution
-RUN dotnet build LocationService.sln -c Release -o /app/build
+# Build the API project directly instead of the solution
+RUN dotnet build LocationService.API/LocationService.API.csproj -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
 WORKDIR "/src"
-RUN dotnet publish LocationService.sln -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish LocationService.API/LocationService.API.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 # Final stage - using SDK image to ensure migration tools are available
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS final
