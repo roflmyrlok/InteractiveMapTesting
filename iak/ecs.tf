@@ -191,7 +191,7 @@ resource "aws_lb_target_group" "user_service" {
   target_type = "ip"
 
   health_check {
-    path                = "/health"
+    path                = "/Health"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 3
@@ -214,7 +214,7 @@ resource "aws_lb_target_group" "location_service" {
   target_type = "ip"
 
   health_check {
-    path                = "/health"
+    path                = "/Health"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 3
@@ -237,7 +237,7 @@ resource "aws_lb_target_group" "review_service" {
   target_type = "ip"
 
   health_check {
-    path                = "/health"
+    path                = "/Health"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 3
