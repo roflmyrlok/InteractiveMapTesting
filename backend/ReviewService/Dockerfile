@@ -46,6 +46,13 @@ until pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER; do\n\
   sleep 5\n\
 done\n\
 \n\
+# Check for LocationService using service discovery\n\
+echo "Checking if LocationService is reachable..."\n\
+until curl -f -s -o /dev/null http://locationservice:8080/health || [ $? -eq 22 ]; do\n\
+  echo "Waiting for LocationService to be ready..."\n\
+  sleep 2\n\
+done\n\
+\n\
 echo "Starting ReviewService..."\n\
 dotnet ReviewService.API.dll\n' > /app/entrypoint.sh
 

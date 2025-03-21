@@ -72,6 +72,14 @@ resource "aws_security_group" "rds" {
     security_groups = [aws_security_group.ecs_services.id]
   }
 
+  # Add egress rule to allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
     Name        = "${var.project_name}-${var.environment}-rds-sg"
     Environment = var.environment
