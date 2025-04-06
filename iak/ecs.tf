@@ -1,3 +1,4 @@
+# iak/ecs.tf
 # ECS Cluster
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-${var.environment}-cluster"
@@ -96,17 +97,6 @@ resource "aws_iam_role" "ecs_task_role" {
 }
 
 # CloudWatch Log Groups
-resource "aws_cloudwatch_log_group" "rabbitmq" {
-  name              = "/ecs/${var.project_name}-${var.environment}/rabbitmq"
-  retention_in_days = 30
-  
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-rabbitmq-logs"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
 resource "aws_cloudwatch_log_group" "user_service" {
   name              = "/ecs/${var.project_name}-${var.environment}/user-service"
   retention_in_days = 30
@@ -317,64 +307,72 @@ resource "aws_lb_listener_rule" "review_service" {
   }
 }
 
-# ECS Task Definitions
-resource "aws_ecs_task_definition" "rabbitmq" {
-  family                   = "${var.project_name}-${var.environment}-rabbitmq"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.service_cpu
-  memory                   = var.service_memory
-  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_role.arn
+# Service Discovery Namespace
+resource "aws_service_discovery_private_dns_namespace" "main" {
+  name        = "${var.project_name}.local"
+  description = "Service discovery namespace for ${var.project_name}"
+  vpc         = aws_vpc.main.id
+}
 
-  container_definitions = jsonencode([
-    {
-      name      = "rabbitmq"
-      image     = "${data.aws_ecr_repository.repositories["deploy/rabbit"].repository_url}:latest"
-      essential = true
-      
-      portMappings = [
-        {
-          containerPort = var.rabbitmq_container_port
-          hostPort      = var.rabbitmq_container_port
-          protocol      = "tcp"
-        },
-        {
-          containerPort = var.rabbitmq_management_port
-          hostPort      = var.rabbitmq_management_port
-          protocol      = "tcp"
-        }
-      ]
-      
-      environment = [
-        {
-          name  = "RABBITMQ_DEFAULT_USER"
-          value = "guest"
-        },
-        {
-          name  = "RABBITMQ_DEFAULT_PASS"
-          value = "guest"
-        }
-      ]
-      
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.rabbitmq.name
-          "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = "ecs"
-        }
-      }
+# Service Discovery Services
+resource "aws_service_discovery_service" "user_service" {
+  name = "userservice"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+
+    dns_records {
+      ttl  = 10
+      type = "A"
     }
-  ])
 
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-rabbitmq"
-    Environment = var.environment
-    Project     = var.project_name
+    routing_policy = "MULTIVALUE"
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
   }
 }
 
+resource "aws_service_discovery_service" "location_service" {
+  name = "locationservice"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+
+    routing_policy = "MULTIVALUE"
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
+resource "aws_service_discovery_service" "review_service" {
+  name = "reviewservice"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+
+    routing_policy = "MULTIVALUE"
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
+# ECS Task Definitions
 resource "aws_ecs_task_definition" "user_service" {
   family                   = "${var.project_name}-${var.environment}-user-service"
   network_mode             = "awsvpc"
@@ -490,22 +488,6 @@ resource "aws_ecs_task_definition" "location_service" {
         {
           name  = "Jwt__Audience"
           value = "MicroservicesClient"
-        },
-        {
-          name  = "RabbitMq__HostName"
-          value = aws_service_discovery_service.rabbitmq.name
-        },
-        {
-          name  = "RabbitMq__UserName"
-          value = "guest"
-        },
-        {
-          name  = "RabbitMq__Password"
-          value = "guest"
-        },
-        {
-          name  = "RabbitMq__Port"
-          value = "5672"
         }
       ]
       
@@ -576,20 +558,8 @@ resource "aws_ecs_task_definition" "review_service" {
           value = "MicroservicesClient"
         },
         {
-          name  = "RabbitMq__HostName"
-          value = aws_service_discovery_service.rabbitmq.name
-        },
-        {
-          name  = "RabbitMq__UserName"
-          value = "guest"
-        },
-        {
-          name  = "RabbitMq__Password"
-          value = "guest"
-        },
-        {
-          name  = "RabbitMq__Port"
-          value = "5672"
+          name  = "Services__LocationService__BaseUrl"
+          value = "http://${aws_service_discovery_service.location_service.name}.${aws_service_discovery_private_dns_namespace.main.name}:8080/"
         }
       ]
       
@@ -611,65 +581,7 @@ resource "aws_ecs_task_definition" "review_service" {
   }
 }
 
-# Service Discovery Namespace
-resource "aws_service_discovery_private_dns_namespace" "main" {
-  name        = "${var.project_name}.local"
-  description = "Service discovery namespace for ${var.project_name}"
-  vpc         = aws_vpc.main.id
-}
-
-# Service Discovery Services
-resource "aws_service_discovery_service" "rabbitmq" {
-  name = "rabbitmq"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.main.id
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
 # ECS Services
-resource "aws_ecs_service" "rabbitmq" {
-  name                               = "${var.project_name}-${var.environment}-rabbitmq"
-  cluster                            = aws_ecs_cluster.main.id
-  task_definition                    = aws_ecs_task_definition.rabbitmq.arn
-  desired_count                      = 1
-  launch_type                        = "FARGATE"
-  scheduling_strategy                = "REPLICA"
-  health_check_grace_period_seconds  = 60
-  force_new_deployment               = true
-
-  network_configuration {
-    subnets          = aws_subnet.private[*].id
-    security_groups  = [aws_security_group.rabbitmq.id]
-    assign_public_ip = false
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.rabbitmq.arn
-  }
-
-  lifecycle {
-    ignore_changes = [desired_count]
-  }
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-rabbitmq"
-    Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
 resource "aws_ecs_service" "user_service" {
   name                               = "${var.project_name}-${var.environment}-user-service"
   cluster                            = aws_ecs_cluster.main.id
@@ -684,6 +596,10 @@ resource "aws_ecs_service" "user_service" {
     subnets          = aws_subnet.private[*].id
     security_groups  = [aws_security_group.ecs_services.id]
     assign_public_ip = false
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.user_service.arn
   }
 
   load_balancer {
@@ -721,13 +637,17 @@ resource "aws_ecs_service" "location_service" {
     assign_public_ip = false
   }
 
+  service_registries {
+    registry_arn = aws_service_discovery_service.location_service.arn
+  }
+
   load_balancer {
     target_group_arn = aws_lb_target_group.location_service.arn
     container_name   = "location-service"
     container_port   = var.service_container_port
   }
 
-  depends_on = [aws_lb_listener.http, aws_iam_role_policy_attachment.ecs_execution_role_policy, aws_ecs_service.rabbitmq]
+  depends_on = [aws_lb_listener.http, aws_iam_role_policy_attachment.ecs_execution_role_policy]
 
   lifecycle {
     ignore_changes = [desired_count]
@@ -756,13 +676,17 @@ resource "aws_ecs_service" "review_service" {
     assign_public_ip = false
   }
 
+  service_registries {
+    registry_arn = aws_service_discovery_service.review_service.arn
+  }
+
   load_balancer {
     target_group_arn = aws_lb_target_group.review_service.arn
     container_name   = "review-service"
     container_port   = var.service_container_port
   }
 
-  depends_on = [aws_lb_listener.http, aws_iam_role_policy_attachment.ecs_execution_role_policy, aws_ecs_service.rabbitmq, aws_ecs_service.location_service]
+  depends_on = [aws_lb_listener.http, aws_iam_role_policy_attachment.ecs_execution_role_policy, aws_ecs_service.location_service]
 
   lifecycle {
     ignore_changes = [desired_count]
