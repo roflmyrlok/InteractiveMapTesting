@@ -1,4 +1,3 @@
-# backend/ReviewService/Dockerfile
 # Build stage
 FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
