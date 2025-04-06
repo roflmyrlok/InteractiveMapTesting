@@ -18,10 +18,11 @@ terraform {
   # }
 }
 
-# Use data sources for existing ECR repositories instead of creating them
+# Use data sources for existing ECR repositories
 data "aws_ecr_repository" "repositories" {
   for_each = toset(var.ecr_repositories)
   name     = each.key
+  registry_id = var.aws_account_id
 }
 
 # Get current AWS account ID for use in other resources

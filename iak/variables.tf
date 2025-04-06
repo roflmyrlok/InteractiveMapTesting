@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "eu-north-1"
 }
 
+variable "aws_account_id" {
+  description = "AWS Account ID - retrieved dynamically, do not hardcode"
+  type        = string
+  # No default - must be provided via terraform.tfvars or environment
+}
+
 variable "project_name" {
   description = "Name of the project"
   type        = string
@@ -49,7 +55,7 @@ variable "database_subnet_cidrs" {
 variable "ecr_repositories" {
   description = "List of ECR repository names"
   type        = list(string)
-  default     = ["deploy/rdb", "deploy/rabbit", "deploy/userservice", "deploy/locationservice", "deploy/reviewservice"]
+  default     = ["deploy/userservice", "deploy/locationservice", "deploy/reviewservice"]
 }
 
 variable "db_username" {

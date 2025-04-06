@@ -26,6 +26,9 @@ terraform.rc
 # Ignore lock files
 .terraform.lock.hcl
 
+# Ignore Terraform plan files
+tf.plan
+
 # Rider IDE specific
 .idea/
 *.iml
