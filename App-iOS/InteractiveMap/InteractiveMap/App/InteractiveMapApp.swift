@@ -8,14 +8,13 @@
 import SwiftUI
 
 @main
-struct TravelMapApp: App {
+struct InteractiveMapApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
                 .environmentObject(authViewModel)
         }
     }
 }
-

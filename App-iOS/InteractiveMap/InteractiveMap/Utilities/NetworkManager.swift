@@ -5,7 +5,6 @@
 //  Created by Andrii Trybushnyi on 07.04.2025.
 //
 
-
 import Foundation
 import Alamofire
 
@@ -25,10 +24,10 @@ class NetworkManager {
             finalHeaders.add(HTTPHeader(name: "Authorization", value: "Bearer \(token)"))
         }
         
-        AF.request(url, 
-                  method: method, 
-                  parameters: parameters, 
-                  encoding: JSONEncoding.default, 
+        AF.request(url,
+                  method: method,
+                  parameters: parameters,
+                  encoding: method == .get ? URLEncoding.default : JSONEncoding.default,
                   headers: finalHeaders)
             .validate()
             .responseDecodable(of: T.self) { response in
@@ -36,6 +35,10 @@ class NetworkManager {
                 case .success(let value):
                     completion(.success(value))
                 case .failure(let error):
+                    // Print additional debug info
+                    if let data = response.data, let json = String(data: data, encoding: .utf8) {
+                        print("Error response JSON: \(json)")
+                    }
                     completion(.failure(error))
                 }
             }

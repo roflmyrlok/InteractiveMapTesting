@@ -5,7 +5,6 @@
 //  Created by Andrii Trybushnyi on 07.04.2025.
 //
 
-
 import SwiftUI
 import MapKit
 
@@ -13,6 +12,7 @@ struct MapView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var viewModel = MapViewModel()
     @Binding var isAuthenticated: Bool
+    @State private var showingProfileMenu = false
     
     var body: some View {
         ZStack {
@@ -22,8 +22,13 @@ struct MapView: View {
                         Image(systemName: "mappin.circle.fill")
                             .foregroundColor(.red)
                             .font(.title)
+                            .background(Color.white.opacity(0.7))
+                            .clipShape(Circle())
                         Text(location.name)
                             .font(.caption)
+                            .padding(4)
+                            .background(Color.white.opacity(0.7))
+                            .cornerRadius(4)
                             .fixedSize()
                     }
                     .onTapGesture {
@@ -37,14 +42,7 @@ struct MapView: View {
                 HStack {
                     Spacer()
                     Button(action: {
-                        if isAuthenticated {
-                            // Show profile or logout
-                            let authViewModel = AuthViewModel()
-                            authViewModel.logout()
-                            isAuthenticated = false
-                        } else {
-                            // Navigate to login
-                        }
+                        showingProfileMenu = true
                     }) {
                         Image(systemName: isAuthenticated ? "person.circle.fill" : "person.circle")
                             .font(.title)
@@ -53,6 +51,24 @@ struct MapView: View {
                             .clipShape(Circle())
                     }
                     .padding()
+                    .actionSheet(isPresented: $showingProfileMenu) {
+                        ActionSheet(
+                            title: Text("Profile Options"),
+                            message: Text(isAuthenticated ? "You are logged in" : "You are not logged in"),
+                            buttons: [
+                                .default(Text(isAuthenticated ? "Logout" : "Login")) {
+                                    if isAuthenticated {
+                                        let authViewModel = AuthViewModel()
+                                        authViewModel.logout()
+                                        isAuthenticated = false
+                                    } else {
+                                        isAuthenticated = false
+                                    }
+                                },
+                                .cancel()
+                            ]
+                        )
+                    }
                 }
                 Spacer()
                 
@@ -62,10 +78,14 @@ struct MapView: View {
                             latitude: location.coordinate.latitude,
                             longitude: location.coordinate.longitude
                         )
+                        
+                        // Update region to current location
+                        locationManager.updateRegion(location: location)
                     }
                 }) {
                     Text("Find Nearby Locations")
                         .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.blue)
                         .cornerRadius(10)
@@ -80,6 +100,20 @@ struct MapView: View {
                     .padding()
                     .background(Color.white.opacity(0.8))
                     .cornerRadius(10)
+            }
+            
+            // Error message display
+            if let errorMessage = viewModel.errorMessage {
+                VStack {
+                    Text(errorMessage)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.red.opacity(0.8))
+                        .cornerRadius(10)
+                        .padding()
+                    
+                    Spacer()
+                }
             }
         }
         .sheet(item: $viewModel.selectedLocation) { location in

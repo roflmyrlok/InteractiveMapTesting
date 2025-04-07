@@ -34,33 +34,9 @@
 		801D193C2DA3B3D50087ED3B /* InteractiveMapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteractiveMapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		801D195F2DA3B62E0087ED3B /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/User.swift,
-			);
-			target = 801D19212DA3B3D20087ED3B /* InteractiveMap */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		801D19602DA3B62E0087ED3B /* Exceptions for "InteractiveMap" folder in "Copy Bundle Resources" phase from "InteractiveMap" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = 801D19202DA3B3D20087ED3B /* Resources */;
-			membershipExceptions = (
-				Models/User.swift,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		801D19242DA3B3D20087ED3B /* InteractiveMap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				801D195F2DA3B62E0087ED3B /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */,
-				801D19602DA3B62E0087ED3B /* Exceptions for "InteractiveMap" folder in "Copy Bundle Resources" phase from "InteractiveMap" target */,
-			);
 			path = InteractiveMap;
 			sourceTree = "<group>";
 		};
@@ -130,7 +106,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 801D19462DA3B3D50087ED3B /* Build configuration list for PBXNativeTarget "InteractiveMap" */;
 			buildPhases = (
-				801D191E2DA3B3D20087ED3B /* Sources */,
+				8097DDA82DA44299000C6E66 /* Sources */,
 				801D191F2DA3B3D20087ED3B /* Frameworks */,
 				801D19202DA3B3D20087ED3B /* Resources */,
 			);
@@ -269,13 +245,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		801D191E2DA3B3D20087ED3B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		801D192E2DA3B3D50087ED3B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -284,6 +253,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		801D19382DA3B3D50087ED3B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8097DDA82DA44299000C6E66 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (

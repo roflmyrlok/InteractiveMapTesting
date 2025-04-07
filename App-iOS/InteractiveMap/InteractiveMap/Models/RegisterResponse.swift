@@ -1,5 +1,5 @@
 //
-//  ProfileViewModel.swift
+//  RegisterResponse.swift
 //  InteractiveMap
 //
 //  Created by Andrii Trybushnyi on 07.04.2025.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct User: Codable, Identifiable {
+struct RegisterResponse: Codable {
     let id: String
     let username: String
     let email: String
@@ -15,5 +15,4 @@ struct User: Codable, Identifiable {
     let lastName: String
     let role: Int
     let createdAt: String
-    let lastLoginDate: String?
 }
