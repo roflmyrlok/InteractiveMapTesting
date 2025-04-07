@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 struct Location: Codable, Identifiable {
     let id: String
     let name: String
@@ -16,12 +17,6 @@ struct Location: Codable, Identifiable {
     let state: String
     let country: String
     let postalCode: String
-    let createdAt: Date
+    let createdAt: String
     let details: [LocationDetail]
-}
-
-struct LocationDetail: Codable, Identifiable {
-    let id: String
-    let propertyName: String
-    let propertyValue: String
 }
