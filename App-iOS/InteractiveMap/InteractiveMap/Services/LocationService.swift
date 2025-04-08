@@ -33,7 +33,7 @@ class LocationService {
         }
     }
     
-    func getNearbyLocations(latitude: Double, longitude: Double, radiusKm: Double = 50, completion: @escaping ([Location]?, Error?) -> Void) {
+    func getNearbyLocations(latitude: Double, longitude: Double, radiusKm: Double = 1, completion: @escaping ([Location]?, Error?) -> Void) {
         let url = "\(APIConstants.locationServiceURL)/nearby?latitude=\(latitude)&longitude=\(longitude)&radiusKm=\(radiusKm)"
         
         NetworkManager.shared.request(
