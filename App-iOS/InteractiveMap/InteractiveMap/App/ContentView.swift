@@ -11,7 +11,8 @@ struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
     var body: some View {
-            MapView(isAuthenticated: $authViewModel.isAuthenticated)
+        MainTabView()
+            .environmentObject(authViewModel)
     }
 }
 

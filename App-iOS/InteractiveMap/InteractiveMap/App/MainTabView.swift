@@ -5,7 +5,6 @@
 //  Created by Andrii Trybushnyi on 07.04.2025.
 //
 
-
 import SwiftUI
 
 struct MainTabView: View {
@@ -16,6 +15,7 @@ struct MainTabView: View {
             NavigationView {
                 ExploreMapView()
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Label("Explore", systemImage: "map")
             }
@@ -23,6 +23,7 @@ struct MainTabView: View {
             NavigationView {
                 ProfileView()
             }
+            .navigationViewStyle(StackNavigationViewStyle())
             .tabItem {
                 Label("Profile", systemImage: "person")
             }
