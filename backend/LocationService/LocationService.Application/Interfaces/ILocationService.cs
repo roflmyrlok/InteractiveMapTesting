@@ -16,5 +16,6 @@ namespace LocationService.Application.Interfaces
 
 		Task<IEnumerable<LocationDto>> FindNearbyLocationsAsync(double latitude, double longitude, double radiusKm = 10);
 		Task<IEnumerable<LocationDto>> FindLocationsByPropertyAsync(string key, string value);
+		Task<bool> ExistsAsync(Guid id);
 	}
 }

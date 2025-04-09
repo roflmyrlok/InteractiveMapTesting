@@ -57,12 +57,11 @@ public class ReviewService : IReviewService
     
     public async Task<ReviewDto> CreateReviewAsync(CreateReviewDto createReviewDto, Guid userId)
     {
-        // Validate that the location exists before creating a review for it
-		// If service/queue is not avaliable no review should be created
         bool locationExists = await _locationService.ValidateLocationExistsAsync(createReviewDto.LocationId);
+        
         if (!locationExists)
         {
-            throw new DomainException($"Location with ID {createReviewDto.LocationId} does not exist");
+            throw new DomainException($"Unable to create review: Location with ID {createReviewDto.LocationId} does not exist");
         }
 
         var review = _mapper.Map<Review>(createReviewDto);

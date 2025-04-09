@@ -22,6 +22,13 @@ namespace LocationService.API.Controllers
             var locations = await _locationService.GetAllLocationsAsync();
             return Ok(locations);
         }
+        
+        [HttpGet("validate/{id}")]
+        public async Task<IActionResult> ValidateExists(Guid id)
+        {
+            var exists = await _locationService.ExistsAsync(id);
+            return Ok(new { Exists = exists });
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)

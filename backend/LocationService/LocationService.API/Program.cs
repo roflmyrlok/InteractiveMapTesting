@@ -7,7 +7,6 @@ using LocationService.API.Middleware;
 using LocationService.Application.Extensions;
 using LocationService.Infrastructure.Data;
 using LocationService.Infrastructure.Extensions;
-using LocationService.Infrastructure.Messaging;
 
 public partial class Program
 {
@@ -50,8 +49,6 @@ public class Startup
         services.AddDbContext<LocationDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        ConfigureRabbitMq(services);
-
         ConfigureJwtAuthentication(services);
 
         services.AddEndpointsApiExplorer();
@@ -59,29 +56,6 @@ public class Startup
         
         services.AddApplicationServices();
         services.AddInfrastructureServices(_configuration);
-    }
-
-    private void ConfigureRabbitMq(IServiceCollection services)
-    {
-        services.Configure<RabbitMqSettings>(options =>
-        {
-            options.HostName = _configuration["RabbitMq:HostName"] ?? "rabbitmq";
-            options.UserName = _configuration["RabbitMq:UserName"] ?? "guest";
-            options.Password = _configuration["RabbitMq:Password"] ?? "guest";
-            options.Port = int.Parse(_configuration["RabbitMq:Port"] ?? "5672");
-            options.ExchangeName = _configuration["RabbitMq:ExchangeName"] ?? "microservices";
-        });
-
-        try
-        {
-            services.AddSingleton<RabbitMqPublisher>();
-            services.AddHostedService<LocationValidationConsumer>();
-        }
-        catch (Exception ex)
-        {
-            var logger = services.BuildServiceProvider().GetRequiredService<ILogger<Startup>>();
-            logger.LogWarning(ex, "Failed to configure RabbitMQ services. The application will run without messaging capabilities.");
-        }
     }
 
     private void ConfigureJwtAuthentication(IServiceCollection services)

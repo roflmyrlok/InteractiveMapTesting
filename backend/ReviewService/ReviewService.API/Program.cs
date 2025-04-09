@@ -7,7 +7,6 @@ using ReviewService.API.Middleware;
 using ReviewService.Application.Extensions;
 using ReviewService.Infrastructure.Data;
 using ReviewService.Infrastructure.Extensions;
-using ReviewService.Infrastructure.Messaging;
 
 public partial class Program
 {
@@ -51,8 +50,6 @@ public class Startup
         services.AddDbContext<ReviewDbContext>(options =>
             options.UseNpgsql(connectionString));
         
-        ConfigureRabbitMq(services);
-        
         ConfigureJwtAuthentication(services);
         
         services.AddEndpointsApiExplorer();
@@ -60,20 +57,6 @@ public class Startup
         
         services.AddApplicationServices();
         services.AddInfrastructureServices(_configuration);
-    }
-
-    private void ConfigureRabbitMq(IServiceCollection services)
-    {
-        services.Configure<RabbitMqSettings>(options =>
-        {
-            options.HostName = _configuration["RabbitMq:HostName"] ?? "rabbitmq";
-            options.UserName = _configuration["RabbitMq:UserName"] ?? "guest";
-            options.Password = _configuration["RabbitMq:Password"] ?? "guest";
-            options.Port = int.Parse(_configuration["RabbitMq:Port"] ?? "5672");
-            options.ExchangeName = _configuration["RabbitMq:ExchangeName"] ?? "microservices";
-        });
-        
-        services.AddSingleton<RabbitMqPublisher>();
     }
 
     private void ConfigureJwtAuthentication(IServiceCollection services)

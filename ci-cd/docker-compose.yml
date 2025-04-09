@@ -18,22 +18,6 @@ services:
     networks:
       - microservices-network
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    ports:
-      - "${RABBITMQ_PORT}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - microservices-network
-
   userservice:
     build:
       context: ../backend/UserService
@@ -48,6 +32,27 @@ services:
       - Jwt__Key=${USERSERVICE_JWT_KEY}
       - Jwt__Issuer=${USERSERVICE_JWT_ISSUER}
       - Jwt__Audience=${USERSERVICE_JWT_AUDIENCE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-network
+      
+  reviewservice:
+    build:
+      context: ../backend/ReviewService
+      dockerfile: Dockerfile
+    ports:
+      - "${REVIEWSERVICE_HTTP_PORT}:8080"
+      - "${REVIEWSERVICE_HTTPS_PORT}:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=${REVIEWSERVICE_CONNECTION_STRING}
+      - Jwt__Key=${REVIEWSERVICE_JWT_KEY}
+      - Jwt__Issuer=${REVIEWSERVICE_JWT_ISSUER}
+      - Jwt__Audience=${REVIEWSERVICE_JWT_AUDIENCE}
+      - Services__LocationService__BaseUrl=${REVIEWSERVICE_LOCATIONSERVICE_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,55 +73,7 @@ services:
       - Jwt__Key=${LOCATIONSERVICE_JWT_KEY}
       - Jwt__Issuer=${LOCATIONSERVICE_JWT_ISSUER}
       - Jwt__Audience=${LOCATIONSERVICE_JWT_AUDIENCE}
-      - RabbitMq__HostName=rabbitmq
-      - RabbitMq__UserName=${RABBITMQ_DEFAULT_USER}
-      - RabbitMq__Password=${RABBITMQ_DEFAULT_PASS}
-      - RabbitMq__Port=5672
-      - RabbitMq__ExchangeName=microservices
-      - RabbitMq__LocationValidationRequestQueue=location-validation-requests
-      - RabbitMq__LocationValidationRequestRoutingKey=location.validation.request
-      - RabbitMq__LocationValidationResponseQueue=location-validation-responses
-      - RabbitMq__LocationValidationResponseRoutingKey=location.validation.response
-      - RabbitMq__QueueDurable=true
-      - RabbitMq__QueueExclusive=false
-      - RabbitMq__QueueAutoDelete=false
-      - RabbitMq__DeadLetterExchange=
-      - RabbitMq__DeadLetterSuffix=.dlq
-      
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - microservices-network
-
-  reviewservice:
-    build:
-      context: ../backend/ReviewService
-      dockerfile: Dockerfile
-    ports:
-      - "${REVIEWSERVICE_HTTP_PORT}:8080"
-      - "${REVIEWSERVICE_HTTPS_PORT}:443"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - ConnectionStrings__DefaultConnection=${REVIEWSERVICE_CONNECTION_STRING}
-      - Jwt__Key=${REVIEWSERVICE_JWT_KEY}
-      - Jwt__Issuer=${REVIEWSERVICE_JWT_ISSUER}
-      - Jwt__Audience=${REVIEWSERVICE_JWT_AUDIENCE}
-      - RabbitMq__HostName=rabbitmq
-      - RabbitMq__UserName=${RABBITMQ_DEFAULT_USER}
-      - RabbitMq__Password=${RABBITMQ_DEFAULT_PASS}
-      - RabbitMq__Port=5672
-      - RabbitMq__ExchangeName=microservices
-      - RabbitMq__LocationValidationRequestQueue=location-validation-requests
-      - RabbitMq__LocationValidationRequestRoutingKey=location.validation.request
-      - RabbitMq__LocationValidationResponseQueue=location-validation-responses
-      - RabbitMq__LocationValidationResponseRoutingKey=location.validation.response
-      - RabbitMq__QueueDurable=true
-      - RabbitMq__QueueExclusive=false
-      - RabbitMq__QueueAutoDelete=false
-      - RabbitMq__DeadLetterExchange=
-      - RabbitMq__DeadLetterSuffix=.dlq
+      - Services__Url=${LOCATIONSERVICE_SERVICE_URL}
     depends_on:
       postgres:
         condition: service_healthy

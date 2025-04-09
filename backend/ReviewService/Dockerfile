@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy the entire solution
@@ -12,12 +12,12 @@ RUN dotnet restore ReviewService.sln
 RUN dotnet build ReviewService.API/ReviewService.API.csproj -c Release -o /app/build
 
 # Publish stage
-FROM build AS publish
+FROM --platform=linux/amd64 build AS publish
 WORKDIR "/src"
 RUN dotnet publish ReviewService.API/ReviewService.API.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 # Final stage - using SDK image to ensure migration tools are available
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS final
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:8.0 AS final
 WORKDIR /app
 
 # Set environment variables
@@ -33,21 +33,25 @@ RUN apt-get update && \
 COPY --from=publish /src .
 COPY --from=publish /app/publish .
 
-# Create entrypoint script with service dependency checks
-RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
-    echo 'until pg_isready -h postgres -p 5432 -U postgres; do' >> /app/entrypoint.sh && \
-    echo '  echo "Waiting for postgres to be ready..."' >> /app/entrypoint.sh && \
-    echo '  sleep 2' >> /app/entrypoint.sh && \
-    echo 'done' >> /app/entrypoint.sh && \
-    echo 'echo "Checking if LocationService is reachable..."' >> /app/entrypoint.sh && \
-    echo 'until curl -f -s -o /dev/null http://locationservice:8080/health || [ $? -eq 22 ]; do' >> /app/entrypoint.sh && \
-    echo '  echo "Waiting for LocationService to be ready..."' >> /app/entrypoint.sh && \
-    echo '  sleep 2' >> /app/entrypoint.sh && \
-    echo 'done' >> /app/entrypoint.sh && \
-    echo 'echo "Starting ReviewService..."' >> /app/entrypoint.sh && \
-    echo 'dotnet ReviewService.API.dll' >> /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
+# Create entrypoint script directly with proper line endings
+RUN printf '#!/bin/bash\n\
+# Extract host from the connection string\n\
+DB_HOST=$(echo $ConnectionStrings__DefaultConnection | grep -o "Host=[^;]*" | cut -d= -f2)\n\
+DB_PORT=$(echo $ConnectionStrings__DefaultConnection | grep -o "Port=[^;]*" | cut -d= -f2)\n\
+DB_USER=$(echo $ConnectionStrings__DefaultConnection | grep -o "Username=[^;]*" | cut -d= -f2)\n\
+\n\
+echo "Waiting for database to be ready at $DB_HOST:$DB_PORT..."\n\
+until pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER; do\n\
+  echo "Waiting for database to be ready..."\n\
+  sleep 5\n\
+done\n\
+\n\
+echo "Starting ReviewService..."\n\
+dotnet ReviewService.API.dll\n' > /app/entrypoint.sh
+
+# Make the entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8080
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]

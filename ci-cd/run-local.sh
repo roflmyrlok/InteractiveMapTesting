@@ -17,10 +17,6 @@ fi
 echo "Stopping any running containers..."
 $DOCKER_COMPOSE_CMD down -v
 
-
-# Start PostgreSQL first
-echo "Starting RabbitMQ..."
-$DOCKER_COMPOSE_CMD up -d postgres rabbitmq
 # Start PostgreSQL first
 echo "Starting PostgreSQL..."
 $DOCKER_COMPOSE_CMD up -d postgres
@@ -73,5 +69,3 @@ echo "  UserService:     http://localhost:${USERSERVICE_HTTP_PORT}/swagger"
 echo "  LocationService: http://localhost:${LOCATIONSERVICE_HTTP_PORT}/swagger"
 echo "  ReviewService:   http://localhost:${REVIEWSERVICE_HTTP_PORT}/swagger"
 echo ""
-echo "RabbitMQ Management:"
-echo "  RabbitMQ UI:     http://localhost:${RABBITMQ_MANAGEMENT_PORT}"
