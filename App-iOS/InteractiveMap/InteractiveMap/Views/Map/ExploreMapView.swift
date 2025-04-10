@@ -22,16 +22,12 @@ struct ExploreMapView: View {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.gray)
                             
-                            // App-iOS/InteractiveMap/InteractiveMap/Views/Map/ExploreMapView.swift
-                            // Update the TextField and search results styling
-
                             TextField("Search locations", text: $searchManager.searchText, onCommit: {
                                 if !searchManager.searchText.isEmpty {
                                     showSearchResults = true
                                 }
                             })
-                            .foregroundColor(.black) // Changed from .primary to .black
-
+                            .foregroundColor(.black)
                             
                             if !searchManager.searchText.isEmpty {
                                 Button(action: {
@@ -77,16 +73,10 @@ struct ExploreMapView: View {
                                                 }) {
                                                     VStack(alignment: .leading) {
                                                         Text(result.title)
-                                                            .foregroundColor(.primary)
+                                                            .foregroundColor(.black)
                                                         Text(result.subtitle)
                                                             .font(.caption)
-                                                            .foregroundColor(.secondary)
-                                                        // Then in the search results section:
-                                                        Text(result.title)
-                                                            .foregroundColor(.black) // Changed from .primary to .black
-                                                        Text(result.subtitle)
-                                                            .font(.caption)
-                                                            .foregroundColor(.black) // Changed from .secondary to .black
+                                                            .foregroundColor(.black)
                                                         
                                                     }
                                                     .padding(.vertical, 8)
@@ -209,7 +199,6 @@ struct ExploreMapView: View {
             LocationDetailView(location: location, isAuthenticated: true)
         }
         .onAppear {
-            // Initialize camera position from the region
             cameraPosition = .region(locationManager.region)
             
             if let location = locationManager.location {
@@ -250,19 +239,12 @@ struct ExploreMapView: View {
                     }
                 }
             }
-            }
             .mapControls {
                 MapCompass()
                 MapScaleView()
             }
             .mapStyle(.standard)
             .ignoresSafeArea(edges: UIDevice.current.userInterfaceIdiom == .pad ? [] : .bottom)
-            // Use this onChange handler to update the region when the user interacts with the map
-            .onChange(of: cameraPosition) { oldPosition, newPosition in
-                // We'd need a way to extract the region from the camera position
-                // This is challenging due to Swift/MapKit limitations
-                // For now, we won't sync back to locationManager.region
-            }
             
             if UIDevice.current.userInterfaceIdiom == .pad {
                 VStack {
@@ -317,7 +299,7 @@ struct ExploreMapView: View {
         }
         .listStyle(PlainListStyle())
     }
-
+}
 
 struct TabButton: View {
     let isSelected: Bool

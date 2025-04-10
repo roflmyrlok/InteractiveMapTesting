@@ -1,9 +1,4 @@
-//
-//  LocationDetailView.swift
-//  InteractiveMap
-//
-//  Created by Andrii Trybushnyi on 07.04.2025.
-//
+// App-iOS/InteractiveMap/InteractiveMap/Views/Location/LocationDetailView.swift
 
 import SwiftUI
 import MapKit
@@ -24,10 +19,7 @@ struct LocationDetailView: View {
                     // Map header
                     ZStack(alignment: .bottomLeading) {
 
-                        Map(coordinateRegion: .constant(MKCoordinateRegion(
-                            center: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude),
-                            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                        ))) {
+                        Map {
                             Marker("", coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude))
                                 .tint(.red)
                         }
