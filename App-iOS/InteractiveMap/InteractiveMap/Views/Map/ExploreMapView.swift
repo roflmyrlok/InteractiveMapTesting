@@ -22,12 +22,16 @@ struct ExploreMapView: View {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.gray)
                             
+                            // App-iOS/InteractiveMap/InteractiveMap/Views/Map/ExploreMapView.swift
+                            // Update the TextField and search results styling
+
                             TextField("Search locations", text: $searchManager.searchText, onCommit: {
                                 if !searchManager.searchText.isEmpty {
                                     showSearchResults = true
                                 }
                             })
-                            .foregroundColor(.primary)
+                            .foregroundColor(.black) // Changed from .primary to .black
+
                             
                             if !searchManager.searchText.isEmpty {
                                 Button(action: {
@@ -77,6 +81,13 @@ struct ExploreMapView: View {
                                                         Text(result.subtitle)
                                                             .font(.caption)
                                                             .foregroundColor(.secondary)
+                                                        // Then in the search results section:
+                                                        Text(result.title)
+                                                            .foregroundColor(.black) // Changed from .primary to .black
+                                                        Text(result.subtitle)
+                                                            .font(.caption)
+                                                            .foregroundColor(.black) // Changed from .secondary to .black
+                                                        
                                                     }
                                                     .padding(.vertical, 8)
                                                     .padding(.horizontal)
@@ -85,7 +96,7 @@ struct ExploreMapView: View {
                                                 Divider()
                                             }
                                         }
-                                        .background(Color.white)
+                                        .background(Color.gray)
                                         .cornerRadius(10)
                                         .shadow(color: Color.black.opacity(0.2), radius: 5)
                                     }
