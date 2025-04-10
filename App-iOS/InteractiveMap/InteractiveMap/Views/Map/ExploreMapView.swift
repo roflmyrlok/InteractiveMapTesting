@@ -1,9 +1,4 @@
-//
-//  ExploreMapView.swift
-//  InteractiveMap
-//
-//  Created by Andrii Trybushnyi on 07.04.2025.
-//
+// App-iOS/InteractiveMap/InteractiveMap/Views/Map/ExploreMapView.swift
 
 import SwiftUI
 import MapKit
@@ -11,69 +6,132 @@ import MapKit
 struct ExploreMapView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var viewModel = MapViewModel()
-    @State private var searchText = ""
-    @State private var showingSearchResults = false
+    @StateObject private var searchManager = SearchManager()
     @State private var selectedTab = 0
+    @State private var showSearchResults = false
+    @State private var cameraPosition: MapCameraPosition = .automatic
     
-    // Default to Kyiv coordinates if user location is not available
     private let kyivCoordinates = CLLocationCoordinate2D(latitude: 50.4501, longitude: 30.5234)
     
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                // Search bar
-                HStack {
+                VStack {
                     HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        
-                        TextField("Search locations", text: $searchText)
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+                            
+                            TextField("Search locations", text: $searchManager.searchText, onCommit: {
+                                if !searchManager.searchText.isEmpty {
+                                    showSearchResults = true
+                                }
+                            })
                             .foregroundColor(.primary)
-                    }
-                    .padding(8)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
-                    .shadow(color: Color.black.opacity(0.2), radius: 5)
-                    
-                    Button(action: {
-                        // Center map on user's location
-                        if let location = locationManager.location {
-                            locationManager.updateRegion(location: location)
-                        } else {
-                            // Center on Kyiv if user location unavailable
-                            locationManager.region = MKCoordinateRegion(
-                                center: kyivCoordinates,
-                                span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-                            )
+                            
+                            if !searchManager.searchText.isEmpty {
+                                Button(action: {
+                                    searchManager.searchText = ""
+                                    showSearchResults = false
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.gray)
+                                }
+                            }
                         }
-                    }) {
-                        Image(systemName: "location.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                            .padding(10)
-                            .background(Color.white)
-                            .clipShape(Circle())
-                            .shadow(color: Color.black.opacity(0.2), radius: 5)
+                        .padding(8)
+                        .background(Color.white)
+                        .cornerRadius(10)
+                        .padding(.horizontal)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5)
+                        .overlay(
+                            VStack {
+                                if showSearchResults && !searchManager.searchResults.isEmpty {
+                                    ScrollView {
+                                        VStack(spacing: 0) {
+                                            ForEach(searchManager.searchResults, id: \.self) { result in
+                                                Button(action: {
+                                                    searchManager.searchLocation(for: result) { coordinate in
+                                                        if let coordinate = coordinate {
+                                                            searchManager.searchText = result.title
+                                                            
+                                                            let newRegion = MKCoordinateRegion(
+                                                                center: coordinate,
+                                                                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                                            )
+                                                            locationManager.region = newRegion
+                                                            cameraPosition = .region(newRegion)
+                                                            
+                                                            viewModel.loadNearbyLocations(
+                                                                latitude: coordinate.latitude,
+                                                                longitude: coordinate.longitude
+                                                            )
+                                                            
+                                                            showSearchResults = false
+                                                        }
+                                                    }
+                                                }) {
+                                                    VStack(alignment: .leading) {
+                                                        Text(result.title)
+                                                            .foregroundColor(.primary)
+                                                        Text(result.subtitle)
+                                                            .font(.caption)
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    .padding(.vertical, 8)
+                                                    .padding(.horizontal)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                                }
+                                                Divider()
+                                            }
+                                        }
+                                        .background(Color.white)
+                                        .cornerRadius(10)
+                                        .shadow(color: Color.black.opacity(0.2), radius: 5)
+                                    }
+                                    .frame(height: min(300, CGFloat(searchManager.searchResults.count * 60)))
+                                }
+                            }
+                            .offset(y: 50)
+                            .zIndex(1)
+                        , alignment: .top)
+                        
+                        Button(action: {
+                            if let location = locationManager.location {
+                                locationManager.updateRegion(location: location)
+                                cameraPosition = .region(locationManager.region)
+                            } else {
+                                let kyivRegion = MKCoordinateRegion(
+                                    center: kyivCoordinates,
+                                    span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+                                )
+                                locationManager.region = kyivRegion
+                                cameraPosition = .region(kyivRegion)
+                            }
+                        }) {
+                            Image(systemName: "location.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                                .padding(10)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .shadow(color: Color.black.opacity(0.2), radius: 5)
+                        }
+                        .padding(.trailing)
                     }
-                    .padding(.trailing)
                 }
                 .padding(.top, 10)
+                .zIndex(2)
                 
-                // Main content
                 if UIDevice.current.userInterfaceIdiom == .pad && geometry.size.width > 768 {
-                    // iPad layout - side by side
                     HStack(spacing: 0) {
-                        // Map view
                         mapView
                             .frame(width: geometry.size.width * 0.6)
                         
-                        // List view
                         locationListView
                             .frame(width: geometry.size.width * 0.4)
                     }
                 } else {
-                    // iPhone layout - tabbed
                     TabView(selection: $selectedTab) {
                         mapView
                             .tag(0)
@@ -83,7 +141,6 @@ struct ExploreMapView: View {
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                     
-                    // Custom tab indicator
                     HStack(spacing: 20) {
                         TabButton(isSelected: selectedTab == 0, title: "Map", systemImage: "map") {
                             selectedTab = 0
@@ -121,12 +178,14 @@ struct ExploreMapView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 2, y: -2)
                 }
             }
+            .onTapGesture {
+                showSearchResults = false
+            }
             
             if viewModel.isLoading {
                 LoadingView()
             }
             
-            // Error message display
             if let errorMessage = viewModel.errorMessage {
                 ErrorBannerView(message: errorMessage) {
                     viewModel.errorMessage = nil
@@ -139,19 +198,20 @@ struct ExploreMapView: View {
             LocationDetailView(location: location, isAuthenticated: true)
         }
         .onAppear {
+            // Initialize camera position from the region
+            cameraPosition = .region(locationManager.region)
+            
             if let location = locationManager.location {
                 viewModel.loadNearbyLocations(
                     latitude: location.coordinate.latitude,
                     longitude: location.coordinate.longitude
                 )
             } else {
-                // If user location is not available, load locations near Kyiv
                 viewModel.loadNearbyLocations(
                     latitude: kyivCoordinates.latitude,
                     longitude: kyivCoordinates.longitude
                 )
                 
-                // Set region to Kyiv
                 locationManager.region = MKCoordinateRegion(
                     center: kyivCoordinates,
                     span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
@@ -160,20 +220,37 @@ struct ExploreMapView: View {
         }
     }
     
-    // Map View
     private var mapView: some View {
         ZStack {
-            Map(coordinateRegion: $locationManager.region, showsUserLocation: true, annotationItems: viewModel.locations) { location in
-                MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)) {
-                    LocationMarkerView(location: location)
-                        .onTapGesture {
-                            viewModel.selectedLocation = location
-                        }
+            Map(position: $cameraPosition) {
+                UserAnnotation()
+                
+                ForEach(viewModel.locations) { location in
+                    Annotation(
+                        location.name,
+                        coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude),
+                        anchor: .bottom
+                    ) {
+                        LocationMarkerView(location: location)
+                            .onTapGesture {
+                                viewModel.selectedLocation = location
+                            }
+                    }
                 }
             }
+            .mapControls {
+                MapCompass()
+                MapScaleView()
+            }
+            .mapStyle(.standard)
             .ignoresSafeArea(edges: UIDevice.current.userInterfaceIdiom == .pad ? [] : .bottom)
+            // Use this onChange handler to update the region when the user interacts with the map
+            .onChange(of: cameraPosition) { oldPosition, newPosition in
+                // We'd need a way to extract the region from the camera position
+                // This is challenging due to Swift/MapKit limitations
+                // For now, we won't sync back to locationManager.region
+            }
             
-            // iPad-specific "Find Nearby" button
             if UIDevice.current.userInterfaceIdiom == .pad {
                 VStack {
                     Spacer()
@@ -207,7 +284,6 @@ struct ExploreMapView: View {
         }
     }
     
-    // List View
     private var locationListView: some View {
         List {
             if viewModel.locations.isEmpty && !viewModel.isLoading {
@@ -230,7 +306,6 @@ struct ExploreMapView: View {
     }
 }
 
-// Tab Button Component
 struct TabButton: View {
     let isSelected: Bool
     let title: String
@@ -251,7 +326,6 @@ struct TabButton: View {
     }
 }
 
-// Location Row Component
 struct LocationRow: View {
     let location: Location
     
@@ -281,13 +355,5 @@ struct LocationRow: View {
                 .foregroundColor(.gray)
         }
         .padding(.vertical, 8)
-    }
-}
-
-struct ExploreMapView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            ExploreMapView()
-        }
     }
 }

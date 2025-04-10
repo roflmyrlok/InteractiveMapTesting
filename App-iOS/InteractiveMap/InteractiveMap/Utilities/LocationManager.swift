@@ -11,12 +11,21 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var location: CLLocation?
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var region = MKCoordinateRegion(
-        // Default to Kyiv
         center: CLLocationCoordinate2D(latitude: 50.4501, longitude: 30.5234),
         span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
     )
     
-    // Add this flag to control when region updates happen
+    // Simplified approach - let's just provide a method to get the position
+    func getCameraPosition() -> MapCameraPosition {
+        return MapCameraPosition.region(self.region)
+    }
+    
+    // And a method to update from a position
+    func updateFromCameraPosition(_ position: MapCameraPosition) {
+        // For now, we'll skip this as it's complicated to extract the region
+        // We'll use a different binding approach in the Map view
+    }
+    
     private var shouldUpdateRegion = true
     
     override init() {
@@ -34,10 +43,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let location = locations.last else { return }
         self.location = location
         
-        // Only update region if flag is true
         if shouldUpdateRegion {
             updateRegion(location: location)
-            // Disable further automatic updates until explicitly requested
             shouldUpdateRegion = false
         }
     }
@@ -51,7 +58,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
-            // Request only a single location update instead of continuous updates
             locationManager.requestLocation()
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
@@ -62,7 +68,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func updateRegion(location: CLLocation) {
         DispatchQueue.main.async {
-            self.shouldUpdateRegion = true // Reset the flag for next explicit update
+            self.shouldUpdateRegion = true
             self.region = MKCoordinateRegion(
                 center: location.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
@@ -70,12 +76,10 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
     
-    // Add this method to disable auto-centering
     func stopUpdatingRegion() {
         shouldUpdateRegion = false
     }
     
-    // Add this method to enable manual user interaction with the map
     func userInteractionBegan() {
         shouldUpdateRegion = false
         locationManager.stopUpdatingLocation()
