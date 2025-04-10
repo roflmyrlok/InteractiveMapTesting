@@ -15,6 +15,7 @@ struct InteractiveMapApp: App {
         WindowGroup {
             MainTabView()
                 .environmentObject(authViewModel)
+                .dismissKeyboardOnTapOutside()
         }
     }
 }
