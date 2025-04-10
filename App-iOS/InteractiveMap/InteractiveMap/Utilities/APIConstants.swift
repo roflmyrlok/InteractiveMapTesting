@@ -8,7 +8,8 @@
 import Foundation
 
 struct APIConstants {
-    static let baseURL = ""
+    // Base URL for production server - now using a single port
+    static let baseURL = "http://ec2-3-122-118-9.eu-central-1.compute.amazonaws.com"
     
     // Service endpoints with single entry point
     static let userServiceURL = "\(baseURL)/api/users"
