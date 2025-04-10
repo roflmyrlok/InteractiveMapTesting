@@ -78,32 +78,50 @@ fi
 
 # Build and start services
 echo "Building and starting services..."
-$DOCKER_COMPOSE_CMD -f docker-compose.prod.yml up -d --build userservice locationservice reviewservice
+$DOCKER_COMPOSE_CMD -f docker-compose.prod.yml up -d userservice locationservice reviewservice
+
+# Start the nginx proxy after services are up
+echo "Starting Nginx reverse proxy..."
+$DOCKER_COMPOSE_CMD -f docker-compose.prod.yml up -d nginx
 
 # Wait a bit for services to start
 echo "Waiting for services to initialize..."
 sleep 15
 
-# Try to get the public IP
-PUBLIC_IP=""
-if command -v curl &> /dev/null; then
-    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || echo "")
+# Try to get the public IP or use domain name from env
+DOMAIN_NAME=""
+if [ -f .env ]; then
+    source .env
+    DOMAIN_NAME="${DOMAIN_NAME:-localhost}"
+else
+    DOMAIN_NAME="localhost"
 fi
 
-# If curl failed or returned empty, try using hostname
-if [ -z "$PUBLIC_IP" ]; then
-    PUBLIC_IP=$(hostname -I | awk '{print $1}' || echo "localhost")
-fi
+# If domain name is not set, try to get public IP
+if [ "$DOMAIN_NAME" = "localhost" ]; then
+    if command -v curl &> /dev/null; then
+        PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || echo "")
+        if [ -n "$PUBLIC_IP" ]; then
+            DOMAIN_NAME=$PUBLIC_IP
+        fi
+    fi
 
-# Load port mappings from .env file
-set -a
-source .env
-set +a
+    # If curl failed or returned empty, try using hostname
+    if [ "$DOMAIN_NAME" = "localhost" ]; then
+        HOSTNAME_IP=$(hostname -I | awk '{print $1}' || echo "localhost")
+        if [ -n "$HOSTNAME_IP" ]; then
+            DOMAIN_NAME=$HOSTNAME_IP
+        fi
+    fi
+fi
 
 echo "All services have been started!"
 echo ""
 echo "Services are running at:"
-echo "  UserService:     http://$PUBLIC_IP:${USERSERVICE_HTTP_PORT}/swagger"
-echo "  LocationService: http://$PUBLIC_IP:${LOCATIONSERVICE_HTTP_PORT}/swagger"
-echo "  ReviewService:   http://$PUBLIC_IP:${REVIEWSERVICE_HTTP_PORT}/swagger"
+echo "  API Gateway: http://$DOMAIN_NAME"
+echo "  Swagger UI:"
+echo "    - User Service: http://$DOMAIN_NAME/swagger/user"
+echo "    - Location Service: http://$DOMAIN_NAME/swagger/location"
+echo "    - Review Service: http://$DOMAIN_NAME/swagger/review"
 echo ""
+echo "Your services are now accessible through a single endpoint!"
