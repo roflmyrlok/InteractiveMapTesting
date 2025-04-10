@@ -12,8 +12,8 @@ using UserService.Infrastructure.Data;
 namespace UserService.Infrastructure.Migrations
 {
     [DbContext(typeof(UserDbContext))]
-    [Migration("20250306114321_InitialPostgreSqlSchema")]
-    partial class InitialPostgreSqlSchema
+    [Migration("20250410203935_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -58,6 +58,9 @@ namespace UserService.Infrastructure.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserRole")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Username")
                         .IsRequired()

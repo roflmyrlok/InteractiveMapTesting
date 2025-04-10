@@ -11,4 +11,5 @@ public class User
 	public string FirstName { get; set; }
 	public string LastName { get; set; }
 	public DateTime? LastLoginDate { get; set; }
+	public UserRole UserRole { get; set; }
 }

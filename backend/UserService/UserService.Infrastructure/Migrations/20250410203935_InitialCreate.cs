@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace UserService.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialPostgreSqlSchema : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -23,7 +23,8 @@ namespace UserService.Infrastructure.Migrations
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
                     FirstName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     LastName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    LastLoginDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    LastLoginDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UserRole = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
