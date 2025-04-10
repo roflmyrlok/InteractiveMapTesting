@@ -11,6 +11,20 @@
 		80EB120B2DA3BA9D00DE7D16 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 80EB120A2DA3BA9D00DE7D16 /* Alamofire */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXBuildRule section */
+		804636972DA7BBEE00349190 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			fileType = text.plist;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+			);
+			script = "# builtin-copyPlist\n";
+		};
+/* End PBXBuildRule section */
+
 /* Begin PBXContainerItemProxy section */
 		801D19332DA3B3D50087ED3B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -34,9 +48,22 @@
 		801D193C2DA3B3D50087ED3B /* InteractiveMapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteractiveMapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		804636992DA7BC6A00349190 /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 801D19212DA3B3D20087ED3B /* InteractiveMap */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		801D19242DA3B3D20087ED3B /* InteractiveMap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				804636992DA7BC6A00349190 /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */,
+			);
 			path = InteractiveMap;
 			sourceTree = "<group>";
 		};
@@ -111,6 +138,7 @@
 				801D19202DA3B3D20087ED3B /* Resources */,
 			);
 			buildRules = (
+				804636972DA7BBEE00349190 /* PBXBuildRule */,
 			);
 			dependencies = (
 			);
@@ -412,6 +440,9 @@
 				DEVELOPMENT_TEAM = WAVR8HH97C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = InteractiveMap/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "This app needs your location to show nearby places on the map";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs your location to show nearby places on the map";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -444,6 +475,9 @@
 				DEVELOPMENT_TEAM = WAVR8HH97C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = InteractiveMap/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "This app needs your location to show nearby places on the map";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs your location to show nearby places on the map";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
