@@ -1,9 +1,4 @@
-//
-//  MapView.swift
-//  InteractiveMap
-//
-//  Created by Andrii Trybushnyi on 07.04.2025.
-//
+// App-iOS/InteractiveMap/InteractiveMap/Views/Map/MapView.swift
 
 import SwiftUI
 import MapKit
@@ -13,30 +8,41 @@ struct MapView: View {
     @StateObject private var viewModel = MapViewModel()
     @Binding var isAuthenticated: Bool
     @State private var showingProfileMenu = false
+    @State private var cameraPosition: MapCameraPosition = .automatic
     
     var body: some View {
         ZStack {
-            Map(coordinateRegion: $locationManager.region, annotationItems: viewModel.locations) { location in
-                MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)) {
-                    VStack {
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(.red)
-                            .font(.title)
-                            .background(Color.white.opacity(0.7))
-                            .clipShape(Circle())
-                        Text(location.name)
-                            .font(.caption)
-                            .padding(4)
-                            .background(Color.white.opacity(0.7))
-                            .cornerRadius(4)
-                            .fixedSize()
-                    }
-                    .onTapGesture {
-                        viewModel.selectedLocation = location
+            Map(position: $cameraPosition) {
+                UserAnnotation()
+                
+                ForEach(viewModel.locations) { location in
+                    Annotation(
+                        "",
+                        coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude),
+                        anchor: .bottom
+                    ) {
+                        VStack {
+                            Image(systemName: "mappin.circle.fill")
+                                .foregroundColor(.red)
+                                .font(.title)
+                                .background(Color.white.opacity(0.7))
+                                .clipShape(Circle())
+                        }
+                        .onTapGesture {
+                            viewModel.selectedLocation = location
+                        }
                     }
                 }
             }
+            .mapControls {
+                MapCompass()
+                MapScaleView()
+            }
+            .mapStyle(.standard)
             .ignoresSafeArea()
+            .onAppear {
+                cameraPosition = .region(locationManager.region)
+            }
             
             VStack {
                 HStack {
@@ -81,6 +87,7 @@ struct MapView: View {
                         
                         // Update region to current location
                         locationManager.updateRegion(location: location)
+                        cameraPosition = .region(locationManager.region)
                     }
                 }) {
                     Text("Find Nearby Locations")

@@ -233,12 +233,13 @@ struct ExploreMapView: View {
     
     private var mapView: some View {
         ZStack {
+
             Map(position: $cameraPosition) {
                 UserAnnotation()
                 
                 ForEach(viewModel.locations) { location in
                     Annotation(
-                        location.name,
+                        "", // Remove the name string to not show text
                         coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude),
                         anchor: .bottom
                     ) {
@@ -248,6 +249,7 @@ struct ExploreMapView: View {
                             }
                     }
                 }
+            }
             }
             .mapControls {
                 MapCompass()
@@ -315,7 +317,7 @@ struct ExploreMapView: View {
         }
         .listStyle(PlainListStyle())
     }
-}
+
 
 struct TabButton: View {
     let isSelected: Bool

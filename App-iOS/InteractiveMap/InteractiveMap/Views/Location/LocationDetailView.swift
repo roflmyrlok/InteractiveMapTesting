@@ -23,12 +23,13 @@ struct LocationDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Map header
                     ZStack(alignment: .bottomLeading) {
-                        // Static map image
+
                         Map(coordinateRegion: .constant(MKCoordinateRegion(
                             center: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude),
                             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                        )), annotationItems: [location]) { location in
-                            MapPin(coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude))
+                        ))) {
+                            Marker("", coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude))
+                                .tint(.red)
                         }
                         .frame(height: min(200, geometry.size.height * 0.3))
                         .disabled(true)
