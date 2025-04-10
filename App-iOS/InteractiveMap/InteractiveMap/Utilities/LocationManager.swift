@@ -1,9 +1,4 @@
-//
-//  LocationManager.swift
-//  InteractiveMap
-//
-//  Created by Andrii Trybushnyi on 07.04.2025.
-//
+// App-iOS/InteractiveMap/InteractiveMap/Utilities/LocationManager.swift
 
 import Foundation
 import CoreLocation
@@ -21,6 +16,9 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
     )
     
+    // Add this flag to control when region updates happen
+    private var shouldUpdateRegion = true
+    
     override init() {
         super.init()
         locationManager.delegate = self
@@ -35,7 +33,13 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         self.location = location
-        updateRegion(location: location)
+        
+        // Only update region if flag is true
+        if shouldUpdateRegion {
+            updateRegion(location: location)
+            // Disable further automatic updates until explicitly requested
+            shouldUpdateRegion = false
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -47,7 +51,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
-            locationManager.startUpdatingLocation()
+            // Request only a single location update instead of continuous updates
+            locationManager.requestLocation()
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
         default:
@@ -57,10 +62,22 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func updateRegion(location: CLLocation) {
         DispatchQueue.main.async {
+            self.shouldUpdateRegion = true // Reset the flag for next explicit update
             self.region = MKCoordinateRegion(
                 center: location.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
             )
         }
+    }
+    
+    // Add this method to disable auto-centering
+    func stopUpdatingRegion() {
+        shouldUpdateRegion = false
+    }
+    
+    // Add this method to enable manual user interaction with the map
+    func userInteractionBegan() {
+        shouldUpdateRegion = false
+        locationManager.stopUpdatingLocation()
     }
 }
