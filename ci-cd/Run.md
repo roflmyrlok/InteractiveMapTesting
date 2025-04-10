@@ -16,16 +16,18 @@ chmod +x run-local.sh
 ```
 
 This script will:
+
 - Create a `.env` file from `.env.example` if one doesn't exist
-- Start PostgreSQL, pgAdmin, and UserService in Docker containers
-- Configure the database with default credentials from .env
+- Start PostgreSQL, and Services in Docker containers
+- Configure the database with credentials from .env
 
 ## Accessing Services
 
 ### API Access
-- Swagger UI: http://localhost:5280/swagger
-- Base API URL: http://localhost:5280
 
+- UserService API URL: http://localhost:5280
+- LocationService API URL: http://localhost:5281
+- ReviewService URL: http://localhost:5282
 
 ## Stopping the Environment
 
