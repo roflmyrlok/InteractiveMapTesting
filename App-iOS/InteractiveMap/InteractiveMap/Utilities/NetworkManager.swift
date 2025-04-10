@@ -1,10 +1,4 @@
-//
-//  NetworkManager.swift
-//  InteractiveMap
-//
-//  Created by Andrii Trybushnyi on 07.04.2025.
-//
-
+// App-iOS/InteractiveMap/InteractiveMap/Utilities/NetworkManager.swift
 import Foundation
 import Alamofire
 
@@ -31,9 +25,17 @@ class NetworkManager {
         
         if authenticated, let token = TokenManager.shared.getToken() {
             finalHeaders.add(HTTPHeader(name: "Authorization", value: "Bearer \(token)"))
+            print("Using token for authenticated request: \(token.prefix(10))...")
+        } else if authenticated {
+            print("No token available for authenticated request!")
         }
         
-        print("📱 Making request to: \(url)")
+        print("Making request to: \(url)")
+        print("Method: \(method.rawValue)")
+        
+        if let params = parameters {
+            print("Parameters: \(params)")
+        }
         
         AF.request(url,
                   method: method,
@@ -42,6 +44,8 @@ class NetworkManager {
                   headers: finalHeaders)
             .validate()
             .responseDecodable(of: T.self) { response in
+                print("Response status code: \(String(describing: response.response?.statusCode))")
+                
                 switch response.result {
                 case .success(let value):
                     print("Request successful: \(url)")

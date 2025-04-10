@@ -6,6 +6,7 @@
 //
 
 
+// App-iOS/InteractiveMap/InteractiveMap/Services/ReviewService.swift
 import Foundation
 import Alamofire
 
@@ -33,18 +34,28 @@ class ReviewService {
             "content": content
         ]
         
-        NetworkManager.shared.request(
-            APIConstants.reviewServiceURL,
-            method: .post,
-            parameters: parameters,
-            authenticated: true
-        ) { (result: Result<Review, Error>) in
-            switch result {
-            case .success(let review):
-                completion(review, nil)
-            case .failure(let error):
-                completion(nil, error)
+        // Check if token exists before making request
+        if TokenManager.shared.isAuthenticated {
+            NetworkManager.shared.request(
+                APIConstants.reviewServiceURL,
+                method: .post,
+                parameters: parameters,
+                authenticated: true  // Explicitly set authenticated to true
+            ) { (result: Result<Review, Error>) in
+                switch result {
+                case .success(let review):
+                    completion(review, nil)
+                case .failure(let error):
+                    completion(nil, error)
+                }
             }
+        } else {
+            let authError = NSError(
+                domain: "ReviewService",
+                code: 401,
+                userInfo: [NSLocalizedDescriptionKey: "You must be logged in to create a review."]
+            )
+            completion(nil, authError)
         }
     }
 }

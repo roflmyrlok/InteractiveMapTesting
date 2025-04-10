@@ -10,10 +10,11 @@ import MapKit
 
 struct LocationDetailView: View {
     let location: Location
-    let isAuthenticated: Bool
+    @State var isAuthenticated: Bool
     @StateObject private var reviewViewModel = ReviewViewModel()
     @State private var showingAddReview = false
     @State private var showingLoginPrompt = false
+    @State private var isLoginViewPresented = false
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -82,15 +83,17 @@ struct LocationDetailView: View {
                 AddReviewView(locationId: location.id, viewModel: reviewViewModel)
             }
         }
-        .alert(isPresented: $showingLoginPrompt) {
-            Alert(
-                title: Text("Login Required"),
-                message: Text("You need to be logged in to add reviews."),
-                primaryButton: .default(Text("Login"), action: {
-                    // Handle navigation to login screen
-                }),
-                secondaryButton: .cancel()
-            )
+        .sheet(isPresented: $isLoginViewPresented) {
+            NavigationView {
+                AuthView()
+                    .environmentObject(AuthViewModel())
+                    .onDisappear {
+                        // Check if the user is now authenticated
+                        if TokenManager.shared.isAuthenticated {
+                            isAuthenticated = true
+                        }
+                    }
+            }
         }
         .onAppear {
             reviewViewModel.loadReviews(for: location.id)
@@ -169,8 +172,12 @@ struct LocationDetailView: View {
                     Spacer()
                 }
                 .padding()
+            } else if let errorMessage = reviewViewModel.errorMessage {
+                Text(errorMessage)
+                    .foregroundColor(.red)
+                    .padding()
             } else if reviewViewModel.reviews.isEmpty {
-                Text("No reviews yet")
+                Text("No reviews yet. Be the first to review!")
                     .italic()
                     .foregroundColor(.gray)
                     .padding()
@@ -182,6 +189,17 @@ struct LocationDetailView: View {
             }
         }
         .padding(.vertical, 8)
+        .alert(isPresented: $showingLoginPrompt) {
+            Alert(
+                title: Text("Login Required"),
+                message: Text("You need to be logged in to add reviews."),
+                primaryButton: .default(Text("Login")) {
+                    // Navigate to the login view
+                    isLoginViewPresented = true
+                },
+                secondaryButton: .cancel()
+            )
+        }
     }
 }
 
