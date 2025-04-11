@@ -5,7 +5,7 @@ using MediatR;
 
 namespace LocationService.Application.Queries
 {
-	public class GetNearbyLocationsQuery : IRequest<IEnumerable<Location>>
+	public class GetNearbyLocationsQuery : IRequest<IEnumerable<Location>>, IRequest<IEnumerable<LocationDto>>
 	{
 		public double Latitude { get; set; }
 		public double Longitude { get; set; }

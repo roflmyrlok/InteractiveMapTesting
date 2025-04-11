@@ -280,24 +280,38 @@ struct ExploreMapView: View {
     }
     
     private var locationListView: some View {
-        List {
+        VStack {
             if viewModel.locations.isEmpty && !viewModel.isLoading {
-                Text("No locations found")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowSeparator(.hidden)
-                    .padding(.top, 40)
+                List {
+                    Text("No locations found")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowSeparator(.hidden)
+                        .padding(.top, 40)
+                }
+                .listStyle(PlainListStyle())
             } else {
-                ForEach(viewModel.locations) { location in
-                    LocationRow(location: location)
-                        .onTapGesture {
-                            viewModel.selectedLocation = location
+                VStack {
+                    if viewModel.locations.count == 10 {
+                        Text("Showing top 10 locations")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.top, 8)
+                    }
+                    
+                    List {
+                        ForEach(viewModel.locations) { location in
+                            LocationRow(location: location)
+                                .onTapGesture {
+                                    viewModel.selectedLocation = location
+                                }
                         }
+                    }
+                    .listStyle(PlainListStyle())
                 }
             }
         }
-        .listStyle(PlainListStyle())
     }
 }
 
