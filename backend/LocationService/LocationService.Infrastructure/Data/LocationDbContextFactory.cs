@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using System.IO;
 
 namespace LocationService.Infrastructure.Data
 {
@@ -19,6 +18,8 @@ namespace LocationService.Infrastructure.Data
 			var configuration = new ConfigurationBuilder()
 				.SetBasePath(basePath)
 				.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+				.AddJsonFile("appsettings.Development.json", optional: true)
+				.AddEnvironmentVariables()
 				.Build();
 
 			var optionsBuilder = new DbContextOptionsBuilder<LocationDbContext>();
