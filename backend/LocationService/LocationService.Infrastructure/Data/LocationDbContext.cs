@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using LocationService.Domain.Entities;
+using Location = LocationService.Domain.Entities.Location;
+using LocationDetail = LocationService.Domain.Entities.LocationDetail;
+using Google.Protobuf.WellKnownTypes;
 
 namespace LocationService.Infrastructure.Data
 {
@@ -18,6 +20,12 @@ namespace LocationService.Infrastructure.Data
             modelBuilder.Entity<Location>(entity =>
             {
                 entity.HasKey(l => l.Id);
+                
+                entity.Property(l => l.Id)
+                    .HasConversion(
+                        v => Guid.Parse(v),   // Convert string to Guid for DB
+                        v => v.ToString()     // Convert Guid to string from DB
+                    );
 
                 entity.Property(l => l.Latitude)
                     .IsRequired();
@@ -28,8 +36,20 @@ namespace LocationService.Infrastructure.Data
                 entity.Property(l => l.Address)
                     .HasMaxLength(200);
                 
+                entity.Property(l => l.CreatedAt)
+                    .HasConversion(
+                        v => v.ToDateTime(),
+                        v => Timestamp.FromDateTime(DateTime.SpecifyKind(v, DateTimeKind.Utc))
+                    );
+                
+                entity.Property(l => l.UpdatedAt)
+                    .HasConversion(
+                        v => v == null ? (DateTime?)null : v.ToDateTime(),
+                        v => v.HasValue ? Timestamp.FromDateTime(DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)) : null
+                    );
+                
                 entity.HasMany(l => l.Details)
-                    .WithOne(d => d.Location)
+                    .WithOne()
                     .HasForeignKey(d => d.LocationId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
@@ -37,8 +57,18 @@ namespace LocationService.Infrastructure.Data
             modelBuilder.Entity<LocationDetail>(entity =>
             {
                 entity.HasKey(d => d.Id);
+                
+                entity.Property(d => d.Id)
+                    .HasConversion(
+                        v => Guid.Parse(v),
+                        v => v.ToString()
+                    );
 
                 entity.Property(d => d.LocationId)
+                    .HasConversion(
+                        v => Guid.Parse(v),
+                        v => v.ToString()
+                    )
                     .IsRequired();
 
                 entity.Property(d => d.PropertyName)
@@ -48,11 +78,6 @@ namespace LocationService.Infrastructure.Data
                 entity.Property(d => d.PropertyValue)
                     .IsRequired()
                     .HasMaxLength(500);
-                
-                entity.HasOne(d => d.Location)
-                    .WithMany(l => l.Details)
-                    .HasForeignKey(d => d.LocationId)
-                    .OnDelete(DeleteBehavior.Cascade);
                 
                 entity.HasIndex(d => new { d.LocationId, d.PropertyName })
                     .IsUnique();
@@ -68,10 +93,10 @@ namespace LocationService.Infrastructure.Data
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        entry.Entity.CreatedAt = DateTime.UtcNow;
+                        entry.Entity.CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow);
                         break;
                     case EntityState.Modified:
-                        entry.Entity.UpdatedAt = DateTime.UtcNow;
+                        entry.Entity.UpdatedAt = Timestamp.FromDateTime(DateTime.UtcNow);
                         break;
                 }
             }

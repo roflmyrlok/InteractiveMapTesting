@@ -2,6 +2,7 @@ using LocationService.Application.Commands;
 using LocationService.Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Location = global::LocationService.Domain.Entities.Location;
 
 namespace LocationService.API.Controllers
 {
@@ -41,7 +42,7 @@ namespace LocationService.API.Controllers
 		}
         
 		[HttpGet("{id}")]
-		public async Task<IActionResult> GetById(Guid id)
+		public async Task<IActionResult> GetById(string id)
 		{
 			return Ok();
 		}

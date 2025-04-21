@@ -6,4 +6,31 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.25.1" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.59.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.60.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\..\..\protos\common.proto"
+              GrpcServices="Both"
+              ProtoRoot="..\..\..\protos"
+              OutputDir="$(ProjectDir)"
+              CompileOutputs="true" />
+    <Protobuf Include="..\..\..\protos\location_detail.proto"
+              GrpcServices="Both"
+              ProtoRoot="..\..\..\protos"
+              OutputDir="$(ProjectDir)"
+              CompileOutputs="true" />
+    <Protobuf Include="..\..\..\protos\location.proto"
+              GrpcServices="Both"
+              ProtoRoot="..\..\..\protos"
+              OutputDir="$(ProjectDir)"
+              CompileOutputs="true" />
+  </ItemGroup>
+
 </Project>

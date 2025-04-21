@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package LocationService.Domain.Entities;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "location_detail.proto"; 
+
+// Match the existing Location class exactly
+message Location {
+  string Id = 1;
+  double Latitude = 2;
+  double Longitude = 3;
+  string Address = 4;
+  google.protobuf.Timestamp CreatedAt = 5;
+  google.protobuf.Timestamp UpdatedAt = 6 [json_name = "UpdatedAt"];
+  repeated LocationDetail Details = 7;
+}

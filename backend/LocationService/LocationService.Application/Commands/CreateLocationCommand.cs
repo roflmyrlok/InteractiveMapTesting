@@ -2,7 +2,7 @@ using MediatR;
 
 namespace LocationService.Application.Commands
 {
-	public class CreateLocationCommand : IRequest<Guid>
+	public class CreateLocationCommand : IRequest<string>
 	{
 		public double Latitude { get; set; }
 		public double Longitude { get; set; }

@@ -1,0 +1,11 @@
+// location_detail.proto
+syntax = "proto3";
+
+package LocationService.Domain.Entities;
+
+message LocationDetail {
+  string Id = 1;
+  string LocationId = 2;
+  string PropertyName = 3;
+  string PropertyValue = 4;
+}

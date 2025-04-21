@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
 using LocationService.Application.Interfaces;
-using LocationService.Domain.Entities;
-using LocationService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Location = LocationService.Domain.Entities.Location;
+using LocationDetail = LocationService.Domain.Entities.LocationDetail;
 
 namespace LocationService.Infrastructure.Data.Repositories
 {
@@ -22,7 +22,7 @@ namespace LocationService.Infrastructure.Data.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Location> GetByIdAsync(Guid id)
+        public async Task<Location> GetByIdAsync(string id)
         {
             return await _context.Locations
                 .Include(l => l.Details)
@@ -39,6 +39,20 @@ namespace LocationService.Infrastructure.Data.Repositories
 
         public async Task<Location> AddAsync(Location location)
         {
+            if (string.IsNullOrEmpty(location.Id))
+            {
+                location.Id = Guid.NewGuid().ToString();
+            }
+
+            foreach (var detail in location.Details)
+            {
+                if (string.IsNullOrEmpty(detail.Id))
+                {
+                    detail.Id = Guid.NewGuid().ToString();
+                }
+                detail.LocationId = location.Id;
+            }
+
             _context.Locations.Add(location);
             await _context.SaveChangesAsync();
             return location;
@@ -50,7 +64,7 @@ namespace LocationService.Infrastructure.Data.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(string id)
         {
             var location = await _context.Locations.FindAsync(id);
             if (location != null)
@@ -60,7 +74,7 @@ namespace LocationService.Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<bool> ExistsAsync(Guid id)
+        public async Task<bool> ExistsAsync(string id)
         {
             return await _context.Locations.AnyAsync(l => l.Id == id);
         }
@@ -75,14 +89,13 @@ namespace LocationService.Infrastructure.Data.Repositories
             _context = context;
         }
 
-        public async Task<LocationDetail> GetByIdAsync(Guid id)
+        public async Task<LocationDetail> GetByIdAsync(string id)
         {
             return await _context.LocationDetails
-                .Include(d => d.Location)
                 .FirstOrDefaultAsync(d => d.Id == id);
         }
 
-        public async Task<IEnumerable<LocationDetail>> GetByLocationIdAsync(Guid locationId)
+        public async Task<IEnumerable<LocationDetail>> GetByLocationIdAsync(string locationId)
         {
             return await _context.LocationDetails
                 .Where(d => d.LocationId == locationId)
@@ -91,6 +104,11 @@ namespace LocationService.Infrastructure.Data.Repositories
 
         public async Task<LocationDetail> AddAsync(LocationDetail detail)
         {
+            if (string.IsNullOrEmpty(detail.Id))
+            {
+                detail.Id = Guid.NewGuid().ToString();
+            }
+            
             _context.LocationDetails.Add(detail);
             await _context.SaveChangesAsync();
             return detail;
@@ -102,7 +120,7 @@ namespace LocationService.Infrastructure.Data.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(string id)
         {
             var detail = await _context.LocationDetails.FindAsync(id);
             if (detail != null)
