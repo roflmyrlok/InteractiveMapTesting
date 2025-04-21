@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package common;
+
+message UUID {
+  string value = 1;
+}
+
+message Empty {
+}
+
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}

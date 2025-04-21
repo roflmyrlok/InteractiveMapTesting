@@ -325,7 +325,7 @@ struct TabButton: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 20))
+                    .font(.system(size: 20))    
                 Text(title)
                     .font(.caption)
             }

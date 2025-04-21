@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+import "common.proto";
+
+package review;
+
+message Review {
+  string id = 1;
+  string user_id = 2;
+  string location_id = 3;
+  int32 rating = 4;
+  string content = 5;
+  common.Timestamp created_at = 6;
+  common.Timestamp updated_at = 7;
+}
+
+message CreateReviewRequest {
+  string location_id = 1;
+  int32 rating = 2;
+  string content = 3;
+  string user_id = 4;
+}
+
+message UpdateReviewRequest {
+  string id = 1;
+  int32 rating = 2;
+  string content = 3;
+  string user_id = 4;
+}
+
+message ReviewsForLocationRequest {
+  string location_id = 1;
+}
+
+message DeleteReviewRequest {
+  string id = 1;
+  string user_id = 2;
+}
