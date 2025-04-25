@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -8,20 +7,19 @@
 
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.25.1" />
-    <!-- Remove Grpc references -->
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="$(SolutionDir)../../protos/common.proto"
-              ProtoRoot="$(SolutionDir)../../protos"
+    <Protobuf Include="../../../protos/common.proto"
+              ProtoRoot="../../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
-    <Protobuf Include="$(SolutionDir)../../protos/location_detail.proto"
-              ProtoRoot="$(SolutionDir)../../protos"
+    <Protobuf Include="../../../protos/location_detail.proto"
+              ProtoRoot="../../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
-    <Protobuf Include="$(SolutionDir)../../protos/location.proto"
-              ProtoRoot="$(SolutionDir)../../protos"
+    <Protobuf Include="../../../protos/location.proto"
+              ProtoRoot="../../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
   </ItemGroup>

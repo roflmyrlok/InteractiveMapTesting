@@ -85,8 +85,8 @@ services:
 
   locationservice:
     build:
-      context: ../backend/LocationService
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/LocationService/Dockerfile
     # Using internal networking only, not exposing to host directly
     expose:
       - "8080"
