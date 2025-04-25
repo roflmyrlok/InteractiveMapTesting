@@ -1,18 +1,19 @@
+using Google.Protobuf.WellKnownTypes;
+using LocationService.Domain.Entities;
 using MediatR;
 
-namespace LocationService.Application.Commands
-{
-	public class CreateLocationCommand : IRequest<string>
-	{
-		public double Latitude { get; set; }
-		public double Longitude { get; set; }
-		public string Address { get; set; }
-		public List<LocationDetailDto> Details { get; set; } = new List<LocationDetailDto>();
-	}
+namespace LocationService.Application.Commands;
 
-	public class LocationDetailDto
-	{
-		public string PropertyName { get; set; }
-		public string PropertyValue { get; set; }
-	}
-}
+public record CreateLocationCommand(
+	string? Id,
+	double Latitude, 
+	double Longitude, 
+	string Address, 
+	List<CreateLocationDetailCommand>? Details
+) : IRequest<Location>;
+
+public record CreateLocationDetailCommand(
+	string? Id, 
+	string PropertyName, 
+	string PropertyValue
+);

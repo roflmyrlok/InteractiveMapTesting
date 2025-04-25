@@ -1,46 +1,47 @@
+using Google.Protobuf.WellKnownTypes;
 using LocationService.Application.Commands;
 using LocationService.Application.Interfaces;
+using LocationService.Domain.Entities;
 using MediatR;
-using Google.Protobuf.WellKnownTypes;
-using Location = LocationService.Domain.Entities.Location;
-using LocationDetail = LocationService.Domain.Entities.LocationDetail;
 
-namespace LocationService.Application.Handlers
+namespace LocationService.Application.Handlers;
+
+public class CreateLocationCommandHandler : IRequestHandler<CreateLocationCommand, Location>
 {
-	public class CreateLocationCommandHandler : IRequestHandler<CreateLocationCommand, string>
+	private readonly ILocationRepository _locationRepository;
+
+	public CreateLocationCommandHandler(ILocationRepository locationRepository)
 	{
-		private readonly ILocationRepository _locationRepository;
+		_locationRepository = locationRepository;
+	}
 
-		public CreateLocationCommandHandler(ILocationRepository locationRepository)
+	public async Task<Location> Handle(CreateLocationCommand request, CancellationToken cancellationToken)
+	{
+		var location = new Location
 		{
-			_locationRepository = locationRepository;
-		}
+			Id = request.Id ?? Guid.NewGuid().ToString(),
+			Latitude = request.Latitude,
+			Longitude = request.Longitude,
+			Address = request.Address,
+			CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
+		};
 
-		public async Task<string> Handle(CreateLocationCommand request, CancellationToken cancellationToken)
+		if (request.Details != null)
 		{
-			var location = new Location
+			foreach (var detailCmd in request.Details)
 			{
-				Id = Guid.NewGuid().ToString(),
-				Latitude = request.Latitude,
-				Longitude = request.Longitude,
-				Address = request.Address,
-				CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow)
-			};
-
-			foreach (var detailDto in request.Details)
-			{
-				location.Details.Add(new LocationDetail
+				var locationDetail = new LocationDetail
 				{
-					Id = Guid.NewGuid().ToString(),
+					Id = detailCmd.Id ?? Guid.NewGuid().ToString(),
 					LocationId = location.Id,
-					PropertyName = detailDto.PropertyName,
-					PropertyValue = detailDto.PropertyValue
-				});
+					PropertyName = detailCmd.PropertyName,
+					PropertyValue = detailCmd.PropertyValue
+				};
+                
+				location.Details.Add(locationDetail);
 			}
-
-			await _locationRepository.AddAsync(location);
-            
-			return location.Id;
 		}
+
+		return await _locationRepository.AddAsync(location);
 	}
 }

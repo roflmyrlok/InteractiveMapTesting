@@ -1,133 +1,81 @@
 using System.Linq.Expressions;
+using Google.Protobuf.WellKnownTypes;
 using LocationService.Application.Interfaces;
+using LocationService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using Location = LocationService.Domain.Entities.Location;
-using LocationDetail = LocationService.Domain.Entities.LocationDetail;
 
-namespace LocationService.Infrastructure.Data.Repositories
+namespace LocationService.Infrastructure.Data.Repositories;
+
+public class LocationRepository : ILocationRepository
 {
-    public class LocationRepository : ILocationRepository
+    private readonly LocationDbContext _context;
+
+    public LocationRepository(LocationDbContext context)
     {
-        private readonly LocationDbContext _context;
+        _context = context;
+    }
 
-        public LocationRepository(LocationDbContext context)
+    public async Task<IEnumerable<Location>> GetAllAsync()
+    {
+        return await _context.Locations
+            .Include(l => l.Details)
+            .ToListAsync();
+    }
+
+    public async Task<Location?> GetByIdAsync(string id)
+    {
+        return await _context.Locations
+            .Include(l => l.Details)
+            .FirstOrDefaultAsync(l => l.Id == id);
+    }
+
+    public async Task<IEnumerable<Location>> FindAsync(Expression<Func<Location, bool>> predicate)
+    {
+        return await _context.Locations
+            .Include(l => l.Details)
+            .Where(predicate)
+            .ToListAsync();
+    }
+
+    public async Task<Location> AddAsync(Location location)
+    {
+        location.Id = string.IsNullOrWhiteSpace(location.Id) 
+            ? Guid.NewGuid().ToString() 
+            : location.Id;
+        
+        location.CreatedAt ??= Timestamp.FromDateTime(DateTime.UtcNow);
+        
+        foreach (var detail in location.Details)
         {
-            _context = context;
+            detail.Id = string.IsNullOrWhiteSpace(detail.Id) 
+                ? Guid.NewGuid().ToString() 
+                : detail.Id;
+            detail.LocationId = location.Id;
         }
 
-        public async Task<IEnumerable<Location>> GetAllAsync()
+        _context.Locations.Add(location);
+        await _context.SaveChangesAsync();
+        return location;
+    }
+
+    public async Task UpdateAsync(Location location)
+    {
+        _context.Locations.Update(location);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(string id)
+    {
+        var location = await _context.Locations.FindAsync(id);
+        if (location != null)
         {
-            return await _context.Locations
-                .Include(l => l.Details)
-                .ToListAsync();
-        }
-
-        public async Task<Location> GetByIdAsync(string id)
-        {
-            return await _context.Locations
-                .Include(l => l.Details)
-                .FirstOrDefaultAsync(l => l.Id == id);
-        }
-
-        public async Task<IEnumerable<Location>> FindAsync(Expression<Func<Location, bool>> predicate)
-        {
-            return await _context.Locations
-                .Include(l => l.Details)
-                .Where(predicate)
-                .ToListAsync();
-        }
-
-        public async Task<Location> AddAsync(Location location)
-        {
-            if (string.IsNullOrEmpty(location.Id))
-            {
-                location.Id = Guid.NewGuid().ToString();
-            }
-
-            foreach (var detail in location.Details)
-            {
-                if (string.IsNullOrEmpty(detail.Id))
-                {
-                    detail.Id = Guid.NewGuid().ToString();
-                }
-                detail.LocationId = location.Id;
-            }
-
-            _context.Locations.Add(location);
+            _context.Locations.Remove(location);
             await _context.SaveChangesAsync();
-            return location;
-        }
-
-        public async Task UpdateAsync(Location location)
-        {
-            _context.Entry(location).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(string id)
-        {
-            var location = await _context.Locations.FindAsync(id);
-            if (location != null)
-            {
-                _context.Locations.Remove(location);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public async Task<bool> ExistsAsync(string id)
-        {
-            return await _context.Locations.AnyAsync(l => l.Id == id);
         }
     }
 
-    public class LocationDetailRepository : ILocationDetailRepository
+    public async Task<bool> ExistsAsync(string id)
     {
-        private readonly LocationDbContext _context;
-
-        public LocationDetailRepository(LocationDbContext context)
-        {
-            _context = context;
-        }
-
-        public async Task<LocationDetail> GetByIdAsync(string id)
-        {
-            return await _context.LocationDetails
-                .FirstOrDefaultAsync(d => d.Id == id);
-        }
-
-        public async Task<IEnumerable<LocationDetail>> GetByLocationIdAsync(string locationId)
-        {
-            return await _context.LocationDetails
-                .Where(d => d.LocationId == locationId)
-                .ToListAsync();
-        }
-
-        public async Task<LocationDetail> AddAsync(LocationDetail detail)
-        {
-            if (string.IsNullOrEmpty(detail.Id))
-            {
-                detail.Id = Guid.NewGuid().ToString();
-            }
-            
-            _context.LocationDetails.Add(detail);
-            await _context.SaveChangesAsync();
-            return detail;
-        }
-
-        public async Task UpdateAsync(LocationDetail detail)
-        {
-            _context.Entry(detail).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(string id)
-        {
-            var detail = await _context.LocationDetails.FindAsync(id);
-            if (detail != null)
-            {
-                _context.LocationDetails.Remove(detail);
-                await _context.SaveChangesAsync();
-            }
-        }
+        return await _context.Locations.AnyAsync(l => l.Id == id);
     }
 }
