@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LocationService.Infrastructure.Migrations
 {
     [DbContext(typeof(LocationDbContext))]
-    [Migration("20250411121531_CQRSImplementation")]
-    partial class CQRSImplementation
+    [Migration("20250425154430_InitialMigrationMatchingProto")]
+    partial class InitialMigrationMatchingProto
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -28,15 +28,13 @@ namespace LocationService.Infrastructure.Migrations
             modelBuilder.Entity("LocationService.Domain.Entities.Location", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<double>("Latitude")
@@ -56,7 +54,6 @@ namespace LocationService.Infrastructure.Migrations
             modelBuilder.Entity("LocationService.Domain.Entities.LocationDetail", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("LocationId")
@@ -82,13 +79,11 @@ namespace LocationService.Infrastructure.Migrations
 
             modelBuilder.Entity("LocationService.Domain.Entities.LocationDetail", b =>
                 {
-                    b.HasOne("LocationService.Domain.Entities.Location", "Location")
+                    b.HasOne("LocationService.Domain.Entities.Location", null)
                         .WithMany("Details")
                         .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Location");
                 });
 
             modelBuilder.Entity("LocationService.Domain.Entities.Location", b =>

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LocationService.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class CQRSImplementation : Migration
+    public partial class InitialMigrationMatchingProto : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,11 +16,11 @@ namespace LocationService.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Latitude = table.Column<double>(type: "double precision", nullable: false),
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
-                    Address = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
+                    Address = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
