@@ -2,8 +2,14 @@
 FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+# Copy proto files first
+COPY ../protos /protos
+
 # Copy the entire solution
 COPY . .
+
+# Update the LocationService.Domain.csproj to use the correct proto path
+RUN sed -i 's|../../../protos|/protos|g' LocationService.Domain/LocationService.Domain.csproj
 
 # Restore dependencies using solution file
 RUN dotnet restore LocationService.sln

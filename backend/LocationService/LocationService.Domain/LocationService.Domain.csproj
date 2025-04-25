@@ -16,19 +16,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\..\..\protos\common.proto"
+    <Protobuf Include="$(SolutionDir)../../../protos/common.proto"
               GrpcServices="Both"
-              ProtoRoot="..\..\..\protos"
+              ProtoRoot="$(SolutionDir)../../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
-    <Protobuf Include="..\..\..\protos\location_detail.proto"
+    <Protobuf Include="$(SolutionDir)../../../protos/location_detail.proto"
               GrpcServices="Both"
-              ProtoRoot="..\..\..\protos"
+              ProtoRoot="$(SolutionDir)../../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
-    <Protobuf Include="..\..\..\protos\location.proto"
+    <Protobuf Include="$(SolutionDir)../../../protos/location.proto"
               GrpcServices="Both"
-              ProtoRoot="..\..\..\protos"
+              ProtoRoot="$(SolutionDir)../../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
   </ItemGroup>
