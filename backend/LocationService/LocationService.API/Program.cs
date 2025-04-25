@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using LocationService.API.Middleware;
@@ -95,7 +97,12 @@ public class Startup
     {
         try 
         {
-            context.Database.GetService<IRelationalDatabaseCreator>().EnsureCreated();
+            var databaseCreator = context.Database.GetService<IRelationalDatabaseCreator>();
+            if (!databaseCreator.Exists())
+            {
+                databaseCreator.Create();
+            }
+            
             context.Database.Migrate();
             logger.LogInformation("Database migration completed successfully.");
         }
