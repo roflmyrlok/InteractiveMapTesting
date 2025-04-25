@@ -2,10 +2,13 @@
 FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy proto files first
-COPY ../protos /protos
+# Create a protos directory relative to solution dir
+RUN mkdir -p ../../protos
 
-# Copy the entire solution
+# Copy proto files to the correct location
+COPY ./protos ../../protos
+
+# Copy the solution files
 COPY . .
 
 # Update the LocationService.Domain.csproj to use the correct proto path

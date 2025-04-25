@@ -8,29 +8,21 @@
 
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.25.1" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.59.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.60.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <!-- Remove Grpc references -->
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="$(SolutionDir)../../../protos/common.proto"
-              GrpcServices="Both"
-              ProtoRoot="$(SolutionDir)../../../protos"
+    <Protobuf Include="$(SolutionDir)../../protos/common.proto"
+              ProtoRoot="$(SolutionDir)../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
-    <Protobuf Include="$(SolutionDir)../../../protos/location_detail.proto"
-              GrpcServices="Both"
-              ProtoRoot="$(SolutionDir)../../../protos"
+    <Protobuf Include="$(SolutionDir)../../protos/location_detail.proto"
+              ProtoRoot="$(SolutionDir)../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
-    <Protobuf Include="$(SolutionDir)../../../protos/location.proto"
-              GrpcServices="Both"
-              ProtoRoot="$(SolutionDir)../../../protos"
+    <Protobuf Include="$(SolutionDir)../../protos/location.proto"
+              ProtoRoot="$(SolutionDir)../../protos"
               OutputDir="$(ProjectDir)"
               CompileOutputs="true" />
   </ItemGroup>
-
 </Project>

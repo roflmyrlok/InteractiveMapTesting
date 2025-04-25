@@ -62,8 +62,8 @@ public class Startup
     {
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Location Service API", Version = "v1" });
-            
+            c.SwaggerDoc("v1", new OpenApiInfo {Title = "Location Service API", Version = "v1"});
+
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Description = "JWT Authorization header using the Bearer scheme",
@@ -95,13 +95,13 @@ public class Startup
     {
         try 
         {
+            context.Database.GetService<IRelationalDatabaseCreator>().EnsureCreated();
             context.Database.Migrate();
             logger.LogInformation("Database migration completed successfully.");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "An error occurred while migrating the database.");
-            throw;
         }
 
         if (env.IsDevelopment())
@@ -111,13 +111,13 @@ public class Startup
         }
 
         app.UseHttpsRedirection();
-        
+    
         app.UseCustomErrorHandling();
 
         app.UseRouting();
         app.UseAuthentication();
         app.UseAuthorization();
-        
+    
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapControllers();
