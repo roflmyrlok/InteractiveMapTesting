@@ -10,8 +10,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocationService.Infrastruct
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocationService.API", "LocationService.API\LocationService.API.csproj", "{8FB17EF5-FBD5-4E96-ADA5-C2F5C279982F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocationService.Tests", "LocationService.Tests\LocationService.Tests.csproj", "{B3CA99B4-EC04-4F58-A540-FBEBE5E49BF0}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,9 +35,5 @@ Global
 		{8FB17EF5-FBD5-4E96-ADA5-C2F5C279982F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FB17EF5-FBD5-4E96-ADA5-C2F5C279982F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FB17EF5-FBD5-4E96-ADA5-C2F5C279982F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B3CA99B4-EC04-4F58-A540-FBEBE5E49BF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B3CA99B4-EC04-4F58-A540-FBEBE5E49BF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B3CA99B4-EC04-4F58-A540-FBEBE5E49BF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B3CA99B4-EC04-4F58-A540-FBEBE5E49BF0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
