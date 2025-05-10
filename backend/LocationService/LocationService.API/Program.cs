@@ -44,43 +44,18 @@ public class Startup
             configure.AddConsole();
             configure.AddDebug();
         });
+        
         var connectionString = _configuration.GetConnectionString("DefaultConnection") 
-            ?? throw new InvalidOperationException("Connection string not configured");
+                               ?? throw new InvalidOperationException("Connection string not configured");
+        
         services.AddDbContext<LocationDbContext>(options =>
             options.UseNpgsql(connectionString));
-
-        ConfigureJwtAuthentication(services);
 
         services.AddEndpointsApiExplorer();
         ConfigureSwagger(services);
         
         services.AddApplicationServices();
         services.AddInfrastructureServices(_configuration);
-    }
-
-    private void ConfigureJwtAuthentication(IServiceCollection services)
-    {
-        var jwtKey = _configuration["Jwt:Key"] 
-            ?? throw new InvalidOperationException("JWT Key is not configured");
-        var jwtIssuer = _configuration["Jwt:Issuer"] 
-            ?? throw new InvalidOperationException("JWT Issuer is not configured");
-        var jwtAudience = _configuration["Jwt:Audience"] 
-            ?? throw new InvalidOperationException("JWT Audience is not configured");
-
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtIssuer,
-                    ValidAudience = jwtAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-                };
-            });
     }
 
     private void ConfigureSwagger(IServiceCollection services)

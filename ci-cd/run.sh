@@ -18,19 +18,13 @@ if [ ! -f .env ]; then
     echo "Created .env file with secure JWT key"
 fi
 
-# Copy docker-compose.yml to docker-compose.prod.yml if it doesn't exist
-if [ ! -f docker-compose.prod.yml ]; then
-    cp docker-compose.yml docker-compose.prod.yml
-    echo "Created docker-compose.prod.yml from docker-compose.yml"
-fi
-
 # Stop any running containers and remove volumes
 echo "Stopping any running containers..."
-$DOCKER_COMPOSE_CMD -f docker-compose.prod.yml down
+$DOCKER_COMPOSE_CMD -f docker-compose.yml down
 
 # Start PostgreSQL first
 echo "Starting PostgreSQL..."
-$DOCKER_COMPOSE_CMD -f docker-compose.prod.yml up -d postgres
+$DOCKER_COMPOSE_CMD -f docker-compose.yml up -d postgres
 
 # Wait for PostgreSQL to be ready with more verbose logging
 echo "Waiting for PostgreSQL to be ready..."
@@ -78,11 +72,11 @@ fi
 
 # Build and start services
 echo "Building and starting services..."
-$DOCKER_COMPOSE_CMD -f docker-compose.prod.yml up -d userservice locationservice reviewservice
+$DOCKER_COMPOSE_CMD -f docker-compose.yml up -d userservice locationservice reviewservice
 
 # Start the nginx proxy after services are up
 echo "Starting Nginx reverse proxy..."
-$DOCKER_COMPOSE_CMD -f docker-compose.prod.yml up -d nginx
+$DOCKER_COMPOSE_CMD -f docker-compose.yml up -d nginx
 
 # Wait a bit for services to start
 echo "Waiting for services to initialize..."

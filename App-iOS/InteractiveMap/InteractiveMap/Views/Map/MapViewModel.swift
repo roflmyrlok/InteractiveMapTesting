@@ -16,6 +16,7 @@ class MapViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     private let locationService = LocationService()
+    private let maxLocations = 10
     
     func loadNearbyLocations(latitude: Double, longitude: Double) {
         isLoading = true
@@ -34,11 +35,16 @@ class MapViewModel: ObservableObject {
                 } else if let locations = locations {
                     // For debugging
                     print("Received \(locations.count) locations")
-                    for location in locations {
+                    
+                    // Limit to maxLocations
+                    let limitedLocations = Array(locations.prefix(self?.maxLocations ?? 10))
+                    print("Displaying \(limitedLocations.count) locations (limited)")
+                    
+                    for location in limitedLocations {
                         print("Location: \(location.name) - lat: \(location.latitude), lon: \(location.longitude)")
                     }
                     
-                    self?.locations = locations
+                    self?.locations = limitedLocations
                 } else {
                     print("No locations returned and no error")
                 }
