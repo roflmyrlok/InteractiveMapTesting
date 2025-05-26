@@ -1,4 +1,5 @@
 using FluentValidation;
+using LocationService.Application.DTOs;
 
 namespace LocationService.Application.Validators
 {

@@ -1,3 +1,4 @@
+using LocationService.Application.DTOs;
 using MediatR;
 
 namespace LocationService.Application.Commands
@@ -9,10 +10,5 @@ namespace LocationService.Application.Commands
 		public string Address { get; set; }
 		public List<LocationDetailDto> Details { get; set; } = new List<LocationDetailDto>();
 	}
-
-	public class LocationDetailDto
-	{
-		public string PropertyName { get; set; }
-		public string PropertyValue { get; set; }
-	}
+	
 }

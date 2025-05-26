@@ -1,4 +1,4 @@
-namespace LocationService.Application
+namespace LocationService.Application.DTOs
 {
 	public class LocationDto
 	{
@@ -9,12 +9,5 @@ namespace LocationService.Application
 		public DateTime CreatedAt { get; set; }
 		public DateTime? UpdatedAt { get; set; }
 		public ICollection<LocationDetailDto> Details { get; set; } = new List<LocationDetailDto>();
-	}
-
-	public class LocationDetailDto
-	{
-		public Guid Id { get; set; }
-		public string PropertyName { get; set; }
-		public string PropertyValue { get; set; }
 	}
 }

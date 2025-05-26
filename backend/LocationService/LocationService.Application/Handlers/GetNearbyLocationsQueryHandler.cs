@@ -1,20 +1,23 @@
+using AutoMapper;
+using LocationService.Application.DTOs;
 using LocationService.Application.Interfaces;
 using LocationService.Application.Queries;
-using LocationService.Domain.Entities;
 using MediatR;
 
 namespace LocationService.Application.Handlers
 {
-	public class GetNearbyLocationsQueryHandler : IRequestHandler<GetNearbyLocationsQuery, IEnumerable<Location>>
+	public class GetNearbyLocationsQueryHandler : IRequestHandler<GetNearbyLocationsQuery, IEnumerable<LocationDto>>
 	{
 		private readonly ILocationRepository _locationRepository;
+		private readonly IMapper _mapper;
 
-		public GetNearbyLocationsQueryHandler(ILocationRepository locationRepository)
+		public GetNearbyLocationsQueryHandler(ILocationRepository locationRepository, IMapper mapper)
 		{
 			_locationRepository = locationRepository;
+			_mapper = mapper;
 		}
 
-		public async Task<IEnumerable<Location>> Handle(GetNearbyLocationsQuery request, CancellationToken cancellationToken)
+		public async Task<IEnumerable<LocationDto>> Handle(GetNearbyLocationsQuery request, CancellationToken cancellationToken)
 		{
 			var allLocations = await _locationRepository.GetAllAsync();
             
@@ -22,7 +25,7 @@ namespace LocationService.Application.Handlers
 				CalculateDistance(request.Latitude, request.Longitude, location.Latitude, location.Longitude) <= request.RadiusKm
 			).ToList();
 
-			return nearbyLocations;
+			return _mapper.Map<IEnumerable<LocationDto>>(nearbyLocations);
 		}
         
 		private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)

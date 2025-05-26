@@ -16,11 +16,20 @@ namespace LocationService.API.Controllers
 			_mediator = mediator;
 		}
 
-		[HttpPost]
-		public async Task<IActionResult> Create([FromBody] CreateLocationCommand command)
+		[HttpGet]
+		public async Task<IActionResult> GetAll()
 		{
-			var locationId = await _mediator.Send(command);
-			return CreatedAtAction(nameof(GetById), new { id = locationId }, new { Id = locationId });
+			var query = new GetAllLocationsQuery();
+			var locations = await _mediator.Send(query);
+			return Ok(locations);
+		}
+
+		[HttpGet("{id}")]
+		public async Task<IActionResult> GetById(Guid id)
+		{
+			var query = new GetLocationByIdQuery { Id = id };
+			var location = await _mediator.Send(query);
+			return Ok(location);
 		}
 
 		[HttpGet("nearby")]
@@ -39,11 +48,12 @@ namespace LocationService.API.Controllers
 			var locations = await _mediator.Send(query);
 			return Ok(locations);
 		}
-        
-		[HttpGet("{id}")]
-		public async Task<IActionResult> GetById(Guid id)
+
+		[HttpPost]
+		public async Task<IActionResult> Create([FromBody] CreateLocationCommand command)
 		{
-			return Ok();
+			var locationId = await _mediator.Send(command);
+			return CreatedAtAction(nameof(GetById), new { id = locationId }, new { Id = locationId });
 		}
 	}
 }
