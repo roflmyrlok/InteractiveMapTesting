@@ -41,7 +41,7 @@ class MapViewModel: ObservableObject {
                     print("Displaying \(limitedLocations.count) locations (limited)")
                     
                     for location in limitedLocations {
-                        print("Location: \(location.name) - lat: \(location.latitude), lon: \(location.longitude)")
+                        print("Location: \(location.address) - lat: \(location.latitude), lon: \(location.longitude)")
                     }
                     
                     self?.locations = limitedLocations

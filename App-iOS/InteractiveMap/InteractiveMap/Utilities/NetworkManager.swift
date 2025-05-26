@@ -1,4 +1,3 @@
-// App-iOS/InteractiveMap/InteractiveMap/Utilities/NetworkManager.swift
 import Foundation
 import Alamofire
 
@@ -43,13 +42,56 @@ class NetworkManager {
                   encoding: method == .get ? URLEncoding.default : JSONEncoding.default,
                   headers: finalHeaders)
             .validate()
-            .responseDecodable(of: T.self) { response in
+            .responseData { response in
                 print("Response status code: \(String(describing: response.response?.statusCode))")
                 
+                // Log raw response data for debugging
+                if let data = response.data {
+                    print("Raw response data size: \(data.count) bytes")
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        print("Raw JSON response: \(jsonString.prefix(500))...")
+                    }
+                }
+                
                 switch response.result {
-                case .success(let value):
+                case .success(let data):
                     print("Request successful: \(url)")
-                    completion(.success(value))
+                    
+                    // Attempt to decode the data
+                    do {
+                        let decoder = JSONDecoder()
+                        
+                        // Configure date decoding strategy for ISO8601 dates
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
+                        formatter.timeZone = TimeZone(abbreviation: "UTC")
+                        decoder.dateDecodingStrategy = .formatted(formatter)
+                        
+                        // Alternative: Use ISO8601 decoder for simpler dates
+                        // decoder.dateDecodingStrategy = .iso8601
+                        
+                        let decodedResult = try decoder.decode(T.self, from: data)
+                        completion(.success(decodedResult))
+                    } catch {
+                        print("Decoding error: \(error)")
+                        if let decodingError = error as? DecodingError {
+                            print("Detailed decoding error: \(decodingError)")
+                            switch decodingError {
+                            case .dataCorrupted(let context):
+                                print("Data corrupted: \(context)")
+                            case .keyNotFound(let key, let context):
+                                print("Key '\(key)' not found: \(context)")
+                            case .typeMismatch(let type, let context):
+                                print("Type '\(type)' mismatch: \(context)")
+                            case .valueNotFound(let value, let context):
+                                print("Value '\(value)' not found: \(context)")
+                            @unknown default:
+                                print("Unknown decoding error")
+                            }
+                        }
+                        completion(.failure(error))
+                    }
+                    
                 case .failure(let error):
                     print("Request failed: \(url)")
                     print("Error: \(error.localizedDescription)")

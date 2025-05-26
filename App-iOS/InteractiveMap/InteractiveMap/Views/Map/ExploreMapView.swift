@@ -346,16 +346,18 @@ struct LocationRow: View {
                 .frame(width: 40, height: 40)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(location.name)
+                Text(getLocationDisplayName(location))
                     .font(.headline)
                 
                 Text(location.address)
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 
-                Text("\(location.city), \(location.state)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                if let district = getLocationDistrict(location) {
+                    Text(district)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
             }
             
             Spacer()
@@ -364,5 +366,19 @@ struct LocationRow: View {
                 .foregroundColor(.gray)
         }
         .padding(.vertical, 8)
+    }
+    
+    private func getLocationDisplayName(_ location: Location) -> String {
+        // Try to get a meaningful name from location details
+        if let typeDetail = location.details.first(where: { $0.propertyName.lowercased() == "sheltertype" || $0.propertyName.lowercased() == "type" }) {
+            return typeDetail.propertyValue
+        }
+        
+        // Fallback to address if no type is found
+        return location.address
+    }
+    
+    private func getLocationDistrict(_ location: Location) -> String? {
+        return location.details.first(where: { $0.propertyName.lowercased() == "district" })?.propertyValue
     }
 }
