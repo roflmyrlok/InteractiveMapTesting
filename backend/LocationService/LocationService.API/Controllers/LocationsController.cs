@@ -27,9 +27,31 @@ namespace LocationService.API.Controllers
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetById(Guid id)
 		{
-			var query = new GetLocationByIdQuery { Id = id };
-			var location = await _mediator.Send(query);
-			return Ok(location);
+			try
+			{
+				var query = new GetLocationByIdQuery { Id = id };
+				var location = await _mediator.Send(query);
+				return Ok(location);
+			}
+			catch (Exception)
+			{
+				return NotFound();
+			}
+		}
+
+		[HttpGet("validate/{id}")]
+		public async Task<IActionResult> ValidateLocation(Guid id)
+		{
+			try
+			{
+				var query = new GetLocationByIdQuery { Id = id };
+				var location = await _mediator.Send(query);
+				return Ok(new { exists = location != null });
+			}
+			catch (Exception)
+			{
+				return Ok(new { exists = false });
+			}
 		}
 
 		[HttpGet("nearby")]
