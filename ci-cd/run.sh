@@ -22,8 +22,13 @@ fi
 echo "Stopping any running containers..."
 $DOCKER_COMPOSE_CMD -f docker-compose.yml down
 
+# Clean up resources to avoid potential conflicts
+echo "Cleaning up Docker resources..."
+docker system prune -f
+
 # Start PostgreSQL first
 echo "Starting PostgreSQL..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml build postgres
 $DOCKER_COMPOSE_CMD -f docker-compose.yml up -d postgres
 
 # Wait for PostgreSQL to be ready with more verbose logging
@@ -31,7 +36,7 @@ echo "Waiting for PostgreSQL to be ready..."
 attempt=0
 max_attempts=30
 while [ $attempt -lt $max_attempts ]; do
-    # Fixed pg_isready check - use docker ps to get container ID first
+    # Get postgres container ID
     POSTGRES_CONTAINER_ID=$(docker ps | grep postgres | awk '{print $1}')
     
     if [ -n "$POSTGRES_CONTAINER_ID" ]; then
@@ -45,7 +50,7 @@ while [ $attempt -lt $max_attempts ]; do
     
     echo "Waiting for PostgreSQL to be ready... (Attempt $((++attempt))/$max_attempts)"
     
-    # Optional: Check container logs if it takes too long
+    # Check container logs if it takes too long
     if [ $attempt -eq 10 ]; then
         echo "PostgreSQL startup taking longer than expected. Checking logs..."
         POSTGRES_CONTAINER_ID=$(docker ps | grep postgres | awk '{print $1}')
@@ -70,12 +75,38 @@ if [ $attempt -eq $max_attempts ]; then
     exit 1
 fi
 
-# Build and start services
-echo "Building and starting services..."
-$DOCKER_COMPOSE_CMD -f docker-compose.yml up -d userservice locationservice reviewservice
+# Build and start services one by one
+echo "Building UserService..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml build userservice
+if [ $? -ne 0 ]; then
+    echo "Error building UserService. Check logs above."
+    exit 1
+fi
 
-# Start the nginx proxy after services are up
-echo "Starting Nginx reverse proxy..."
+echo "Building LocationService..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml build locationservice
+if [ $? -ne 0 ]; then
+    echo "Error building LocationService. Check logs above."
+    exit 1
+fi
+
+echo "Building ReviewService..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml build reviewservice
+if [ $? -ne 0 ]; then
+    echo "Error building ReviewService. Check logs above."
+    exit 1
+fi
+
+echo "Starting UserService..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml up -d userservice
+echo "Starting LocationService..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml up -d locationservice
+echo "Starting ReviewService..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml up -d reviewservice
+
+# Build and start the nginx proxy
+echo "Building and starting Nginx reverse proxy..."
+$DOCKER_COMPOSE_CMD -f docker-compose.yml build nginx
 $DOCKER_COMPOSE_CMD -f docker-compose.yml up -d nginx
 
 # Wait a bit for services to start
@@ -91,21 +122,16 @@ else
     DOMAIN_NAME="localhost"
 fi
 
-# If domain name is not set, try to get public IP
+# Try to get IP address as fallback, using a more compatible approach
 if [ "$DOMAIN_NAME" = "localhost" ]; then
+    PUBLIC_IP=""
+    # Try to get EC2 metadata (will work on AWS instances)
     if command -v curl &> /dev/null; then
-        PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || echo "")
-        if [ -n "$PUBLIC_IP" ]; then
-            DOMAIN_NAME=$PUBLIC_IP
-        fi
+        PUBLIC_IP=$(curl -s --connect-timeout 2 http://169.254.169.254/latest/meta-data/public-ipv4 || echo "")
     fi
-
-    # If curl failed or returned empty, try using hostname
-    if [ "$DOMAIN_NAME" = "localhost" ]; then
-        HOSTNAME_IP=$(hostname -I | awk '{print $1}' || echo "localhost")
-        if [ -n "$HOSTNAME_IP" ]; then
-            DOMAIN_NAME=$HOSTNAME_IP
-        fi
+    
+    if [ -n "$PUBLIC_IP" ]; then
+        DOMAIN_NAME=$PUBLIC_IP
     fi
 fi
 
