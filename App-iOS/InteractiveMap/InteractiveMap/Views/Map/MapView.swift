@@ -9,6 +9,8 @@ struct MapView: View {
     @Binding var isAuthenticated: Bool
     @State private var showingProfileMenu = false
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var showingLocationDetail = false
+    @State private var locationToShow: Location?
     
     var body: some View {
         ZStack {
@@ -29,7 +31,8 @@ struct MapView: View {
                                 .clipShape(Circle())
                         }
                         .onTapGesture {
-                            viewModel.selectedLocation = location
+                            print("Map pin tapped for location: \(location.id) - \(location.address)")
+                            showLocationDetail(for: location)
                         }
                     }
                 }
@@ -123,8 +126,10 @@ struct MapView: View {
                 }
             }
         }
-        .sheet(item: $viewModel.selectedLocation) { location in
-            LocationDetailView(location: location, isAuthenticated: isAuthenticated)
+        .sheet(isPresented: $showingLocationDetail) {
+            if let location = locationToShow {
+                LocationDetailView(location: location, isAuthenticated: isAuthenticated)
+            }
         }
         .onAppear {
             if let location = locationManager.location {
@@ -134,5 +139,11 @@ struct MapView: View {
                 )
             }
         }
+    }
+    
+    private func showLocationDetail(for location: Location) {
+        print("Showing location detail for: \(location.id) - \(location.address)")
+        locationToShow = location
+        showingLocationDetail = true
     }
 }

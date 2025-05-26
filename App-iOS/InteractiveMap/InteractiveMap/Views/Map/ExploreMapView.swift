@@ -10,6 +10,8 @@ struct ExploreMapView: View {
     @State private var selectedTab = 0
     @State private var showSearchResults = false
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var showingLocationDetail = false
+    @State private var locationToShow: Location?
     
     private let kyivCoordinates = CLLocationCoordinate2D(latitude: 50.4501, longitude: 30.5234)
     
@@ -195,8 +197,10 @@ struct ExploreMapView: View {
         }
         .navigationTitle("Explore")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $viewModel.selectedLocation) { location in
-            LocationDetailView(location: location, isAuthenticated: true)
+        .sheet(isPresented: $showingLocationDetail) {
+            if let location = locationToShow {
+                LocationDetailView(location: location, isAuthenticated: true)
+            }
         }
         .onAppear {
             cameraPosition = .region(locationManager.region)
@@ -220,6 +224,12 @@ struct ExploreMapView: View {
         }
     }
     
+    private func showLocationDetail(for location: Location) {
+        print("Showing location detail for: \(location.id) - \(location.address)")
+        locationToShow = location
+        showingLocationDetail = true
+    }
+    
     private var mapView: some View {
         ZStack {
 
@@ -234,7 +244,8 @@ struct ExploreMapView: View {
                     ) {
                         LocationMarkerView(location: location)
                             .onTapGesture {
-                                viewModel.selectedLocation = location
+                                print("Map pin tapped for location: \(location.id) - \(location.address)")
+                                showLocationDetail(for: location)
                             }
                     }
                 }
@@ -304,7 +315,8 @@ struct ExploreMapView: View {
                         ForEach(viewModel.locations) { location in
                             LocationRow(location: location)
                                 .onTapGesture {
-                                    viewModel.selectedLocation = location
+                                    print("List row tapped for location: \(location.id) - \(location.address)")
+                                    showLocationDetail(for: location)
                                 }
                         }
                     }

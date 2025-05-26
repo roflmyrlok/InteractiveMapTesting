@@ -23,12 +23,44 @@ struct Location: Codable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        id = try container.decode(String.self, forKey: .id)
-        latitude = try container.decode(Double.self, forKey: .latitude)
-        longitude = try container.decode(Double.self, forKey: .longitude)
-        address = try container.decode(String.self, forKey: .address)
-        createdAt = try container.decode(String.self, forKey: .createdAt)
-        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
-        details = try container.decode([LocationDetail].self, forKey: .details)
+        do {
+            id = try container.decode(String.self, forKey: .id)
+            latitude = try container.decode(Double.self, forKey: .latitude)
+            longitude = try container.decode(Double.self, forKey: .longitude)
+            address = try container.decode(String.self, forKey: .address)
+            createdAt = try container.decode(String.self, forKey: .createdAt)
+            updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+            details = try container.decode([LocationDetail].self, forKey: .details)
+            
+            // Debug logging for potential issues
+            if id.isEmpty {
+                print("WARNING: Location decoded with empty ID")
+            }
+            if address.isEmpty {
+                print("WARNING: Location decoded with empty address")
+            }
+            if latitude == 0 && longitude == 0 {
+                print("WARNING: Location decoded with zero coordinates")
+            }
+            
+        } catch {
+            print("ERROR decoding Location: \(error)")
+            print("Container keys available: \(container.allKeys)")
+            throw error
+        }
+    }
+}
+
+// Add Equatable conformance for better debugging
+extension Location: Equatable {
+    static func == (lhs: Location, rhs: Location) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
+
+// Add Hashable for better performance in collections
+extension Location: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
