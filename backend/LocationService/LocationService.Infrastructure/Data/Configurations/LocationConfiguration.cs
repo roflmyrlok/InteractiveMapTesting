@@ -9,11 +9,7 @@ namespace LocationService.Infrastructure.Data.Configurations
         public void Configure(EntityTypeBuilder<Location> builder)
         {
             builder.HasKey(l => l.Id);
-
-            builder.Property(l => l.Name)
-                .IsRequired()
-                .HasMaxLength(100);
-
+            
             builder.Property(l => l.Latitude)
                 .IsRequired();
 
@@ -22,18 +18,6 @@ namespace LocationService.Infrastructure.Data.Configurations
 
             builder.Property(l => l.Address)
                 .HasMaxLength(200);
-
-            builder.Property(l => l.City)
-                .HasMaxLength(100);
-
-            builder.Property(l => l.State)
-                .HasMaxLength(100);
-
-            builder.Property(l => l.Country)
-                .HasMaxLength(100);
-
-            builder.Property(l => l.PostalCode)
-                .HasMaxLength(20);
             
             builder.HasMany(l => l.Details)
                 .WithOne(d => d.Location)

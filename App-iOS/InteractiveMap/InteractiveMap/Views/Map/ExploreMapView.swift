@@ -10,6 +10,8 @@ struct ExploreMapView: View {
     @State private var selectedTab = 0
     @State private var showSearchResults = false
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var showingLocationDetail = false
+    @State private var locationToShow: Location?
     
     private let kyivCoordinates = CLLocationCoordinate2D(latitude: 50.4501, longitude: 30.5234)
     
@@ -195,8 +197,10 @@ struct ExploreMapView: View {
         }
         .navigationTitle("Explore")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $viewModel.selectedLocation) { location in
-            LocationDetailView(location: location, isAuthenticated: true)
+        .sheet(isPresented: $showingLocationDetail) {
+            if let location = locationToShow {
+                LocationDetailView(location: location, isAuthenticated: true)
+            }
         }
         .onAppear {
             cameraPosition = .region(locationManager.region)
@@ -220,6 +224,12 @@ struct ExploreMapView: View {
         }
     }
     
+    private func showLocationDetail(for location: Location) {
+        print("Showing location detail for: \(location.id) - \(location.address)")
+        locationToShow = location
+        showingLocationDetail = true
+    }
+    
     private var mapView: some View {
         ZStack {
 
@@ -234,7 +244,8 @@ struct ExploreMapView: View {
                     ) {
                         LocationMarkerView(location: location)
                             .onTapGesture {
-                                viewModel.selectedLocation = location
+                                print("Map pin tapped for location: \(location.id) - \(location.address)")
+                                showLocationDetail(for: location)
                             }
                     }
                 }
@@ -280,24 +291,39 @@ struct ExploreMapView: View {
     }
     
     private var locationListView: some View {
-        List {
+        VStack {
             if viewModel.locations.isEmpty && !viewModel.isLoading {
-                Text("No locations found")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowSeparator(.hidden)
-                    .padding(.top, 40)
+                List {
+                    Text("No locations found")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowSeparator(.hidden)
+                        .padding(.top, 40)
+                }
+                .listStyle(PlainListStyle())
             } else {
-                ForEach(viewModel.locations) { location in
-                    LocationRow(location: location)
-                        .onTapGesture {
-                            viewModel.selectedLocation = location
+                VStack {
+                    if viewModel.locations.count == 10 {
+                        Text("Showing top 10 locations")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .padding(.top, 8)
+                    }
+                    
+                    List {
+                        ForEach(viewModel.locations) { location in
+                            LocationRow(location: location)
+                                .onTapGesture {
+                                    print("List row tapped for location: \(location.id) - \(location.address)")
+                                    showLocationDetail(for: location)
+                                }
                         }
+                    }
+                    .listStyle(PlainListStyle())
                 }
             }
         }
-        .listStyle(PlainListStyle())
     }
 }
 
@@ -332,16 +358,18 @@ struct LocationRow: View {
                 .frame(width: 40, height: 40)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(location.name)
+                Text(getLocationDisplayName(location))
                     .font(.headline)
                 
                 Text(location.address)
                     .font(.subheadline)
                     .foregroundColor(.gray)
                 
-                Text("\(location.city), \(location.state)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                if let district = getLocationDistrict(location) {
+                    Text(district)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
             }
             
             Spacer()
@@ -350,5 +378,19 @@ struct LocationRow: View {
                 .foregroundColor(.gray)
         }
         .padding(.vertical, 8)
+    }
+    
+    private func getLocationDisplayName(_ location: Location) -> String {
+        // Try to get a meaningful name from location details
+        if let typeDetail = location.details.first(where: { $0.propertyName.lowercased() == "sheltertype" || $0.propertyName.lowercased() == "type" }) {
+            return typeDetail.propertyValue
+        }
+        
+        // Fallback to address if no type is found
+        return location.address
+    }
+    
+    private func getLocationDistrict(_ location: Location) -> String? {
+        return location.details.first(where: { $0.propertyName.lowercased() == "district" })?.propertyValue
     }
 }

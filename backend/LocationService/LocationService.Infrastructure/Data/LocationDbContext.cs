@@ -19,10 +19,6 @@ namespace LocationService.Infrastructure.Data
             {
                 entity.HasKey(l => l.Id);
 
-                entity.Property(l => l.Name)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
                 entity.Property(l => l.Latitude)
                     .IsRequired();
 
@@ -31,18 +27,6 @@ namespace LocationService.Infrastructure.Data
 
                 entity.Property(l => l.Address)
                     .HasMaxLength(200);
-
-                entity.Property(l => l.City)
-                    .HasMaxLength(100);
-
-                entity.Property(l => l.State)
-                    .HasMaxLength(100);
-
-                entity.Property(l => l.Country)
-                    .HasMaxLength(100);
-
-                entity.Property(l => l.PostalCode)
-                    .HasMaxLength(20);
                 
                 entity.HasMany(l => l.Details)
                     .WithOne(d => d.Location)

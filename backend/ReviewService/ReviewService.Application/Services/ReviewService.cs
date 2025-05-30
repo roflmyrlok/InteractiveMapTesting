@@ -57,21 +57,38 @@ public class ReviewService : IReviewService
     
     public async Task<ReviewDto> CreateReviewAsync(CreateReviewDto createReviewDto, Guid userId)
     {
-        bool locationExists = await _locationService.ValidateLocationExistsAsync(createReviewDto.LocationId);
+        _logger.LogInformation("Creating review for location {LocationId} by user {UserId}", createReviewDto.LocationId, userId);
         
-        if (!locationExists)
+        try
         {
-            throw new DomainException($"Unable to create review: Location with ID {createReviewDto.LocationId} does not exist");
+            bool locationExists = await _locationService.ValidateLocationExistsAsync(createReviewDto.LocationId);
+            
+            if (!locationExists)
+            {
+                _logger.LogWarning("Location {LocationId} does not exist, cannot create review", createReviewDto.LocationId);
+                throw new DomainException($"Unable to create review: Location with ID {createReviewDto.LocationId} does not exist");
+            }
+
+            var review = _mapper.Map<Review>(createReviewDto);
+            review.Id = Guid.NewGuid();
+            review.UserId = userId;
+            review.CreatedAt = DateTime.UtcNow;
+
+            await _reviewRepository.AddAsync(review);
+            
+            _logger.LogInformation("Successfully created review {ReviewId} for location {LocationId}", review.Id, createReviewDto.LocationId);
+
+            return _mapper.Map<ReviewDto>(review);
         }
-
-        var review = _mapper.Map<Review>(createReviewDto);
-        review.Id = Guid.NewGuid();
-        review.UserId = userId;
-        review.CreatedAt = DateTime.UtcNow;
-
-        await _reviewRepository.AddAsync(review);
-
-        return _mapper.Map<ReviewDto>(review);
+        catch (DomainException)
+        {
+            throw; // Re-throw domain exceptions as-is
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating review for location {LocationId}", createReviewDto.LocationId);
+            throw new DomainException("An error occurred while creating the review. Please try again.");
+        }
     }
 
     public async Task<ReviewDto> UpdateReviewAsync(UpdateReviewDto updateReviewDto, Guid userId)

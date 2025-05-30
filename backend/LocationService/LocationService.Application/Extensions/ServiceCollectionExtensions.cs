@@ -1,10 +1,9 @@
+using System.Reflection;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Microsoft.Extensions.DependencyInjection;
-using LocationService.Application.Interfaces;
-using LocationService.Application.Services;
 using LocationService.Application.Mapping;
-using LocationService.Application.Validators;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LocationService.Application.Extensions
 {
@@ -12,12 +11,13 @@ namespace LocationService.Application.Extensions
 	{
 		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
 		{
+			services.AddMediatR(cfg => 
+				cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+            
 			services.AddAutoMapper(typeof(MappingProfile));
-			
-			services.AddScoped<ILocationService, Services.LocationService>();
-			
+            
 			services.AddFluentValidationAutoValidation();
-			services.AddValidatorsFromAssemblyContaining<CreateLocationValidator>();
+			services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
             
 			return services;
 		}

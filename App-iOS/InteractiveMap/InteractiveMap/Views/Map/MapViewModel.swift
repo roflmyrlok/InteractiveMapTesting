@@ -11,11 +11,11 @@ import Combine
 
 class MapViewModel: ObservableObject {
     @Published var locations: [Location] = []
-    @Published var selectedLocation: Location?
     @Published var isLoading = false
     @Published var errorMessage: String?
     
     private let locationService = LocationService()
+    private let maxLocations = 10
     
     func loadNearbyLocations(latitude: Double, longitude: Double) {
         isLoading = true
@@ -32,13 +32,32 @@ class MapViewModel: ObservableObject {
                     self?.errorMessage = error.localizedDescription
                     print("Error loading locations: \(error.localizedDescription)")
                 } else if let locations = locations {
-                    // For debugging
+                    // Enhanced debugging
                     print("Received \(locations.count) locations")
-                    for location in locations {
-                        print("Location: \(location.name) - lat: \(location.latitude), lon: \(location.longitude)")
+                    
+                    // Check for data integrity issues
+                    for (index, location) in locations.enumerated() {
+                        print("Location \(index): ID=\(location.id), Address=\(location.address)")
+                        print("  - Coordinates: lat=\(location.latitude), lon=\(location.longitude)")
+                        print("  - Details count: \(location.details.count)")
+                        
+                        // Check for potential issues
+                        if location.id.isEmpty {
+                            print("  - WARNING: Empty ID detected!")
+                        }
+                        if location.address.isEmpty {
+                            print("  - WARNING: Empty address detected!")
+                        }
+                        if location.latitude == 0 && location.longitude == 0 {
+                            print("  - WARNING: Zero coordinates detected!")
+                        }
                     }
                     
-                    self?.locations = locations
+                    // Limit to maxLocations
+                    let limitedLocations = Array(locations.prefix(self?.maxLocations ?? 10))
+                    print("Displaying \(limitedLocations.count) locations (limited)")
+                    
+                    self?.locations = limitedLocations
                 } else {
                     print("No locations returned and no error")
                 }

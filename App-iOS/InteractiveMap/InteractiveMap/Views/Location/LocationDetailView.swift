@@ -27,7 +27,7 @@ struct LocationDetailView: View {
                         .disabled(true)
                         
                         // Location name overlay
-                        Text(location.name)
+                        Text(getLocationDisplayName(location))
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -105,9 +105,7 @@ struct LocationDetailView: View {
                         .font(.headline)
                 }
                 
-                Text("\(location.address)")
-                Text("\(location.city), \(location.state) \(location.postalCode)")
-                Text("\(location.country)")
+                Text(location.address)
             }
             .padding(.vertical, 8)
             
@@ -193,6 +191,16 @@ struct LocationDetailView: View {
                 secondaryButton: .cancel()
             )
         }
+    }
+    
+    private func getLocationDisplayName(_ location: Location) -> String {
+        // Try to get a meaningful name from location details
+        if let typeDetail = location.details.first(where: { $0.propertyName.lowercased() == "sheltertype" || $0.propertyName.lowercased() == "type" }) {
+            return typeDetail.propertyValue
+        }
+        
+        // Fallback to address if no type is found
+        return location.address
     }
 }
 
