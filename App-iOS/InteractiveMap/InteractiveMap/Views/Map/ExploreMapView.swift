@@ -12,6 +12,7 @@ struct ExploreMapView: View {
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var showingLocationDetail = false
     @State private var locationToShow: Location?
+    @State private var selectedLocation: Location?
     
     private let kyivCoordinates = CLLocationCoordinate2D(latitude: 50.4501, longitude: 30.5234)
     
@@ -183,6 +184,7 @@ struct ExploreMapView: View {
             }
             .onTapGesture {
                 showSearchResults = false
+                selectedLocation = nil
             }
             
             if viewModel.isLoading {
@@ -199,7 +201,12 @@ struct ExploreMapView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingLocationDetail) {
             if let location = locationToShow {
-                LocationDetailView(location: location, isAuthenticated: true)
+                NavigationView {
+                    LocationDetailView(location: location, isAuthenticated: TokenManager.shared.isAuthenticated)
+                        .navigationBarItems(trailing: Button("Done") {
+                            showingLocationDetail = false
+                        })
+                }
             }
         }
         .onAppear {
@@ -227,18 +234,18 @@ struct ExploreMapView: View {
     private func showLocationDetail(for location: Location) {
         print("Showing location detail for: \(location.id) - \(location.address)")
         locationToShow = location
+        selectedLocation = location
         showingLocationDetail = true
     }
     
     private var mapView: some View {
         ZStack {
-
-            Map(position: $cameraPosition) {
+            Map(position: $cameraPosition, selection: $selectedLocation) {
                 UserAnnotation()
                 
                 ForEach(viewModel.locations) { location in
                     Annotation(
-                        "", // Remove the name string to not show text
+                        location.address,
                         coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude),
                         anchor: .bottom
                     ) {
@@ -248,6 +255,7 @@ struct ExploreMapView: View {
                                 showLocationDetail(for: location)
                             }
                     }
+                    .tag(location)
                 }
             }
             .mapControls {
@@ -256,6 +264,11 @@ struct ExploreMapView: View {
             }
             .mapStyle(.standard)
             .ignoresSafeArea(edges: UIDevice.current.userInterfaceIdiom == .pad ? [] : .bottom)
+            .onChange(of: selectedLocation) { newLocation in
+                if let location = newLocation {
+                    showLocationDetail(for: location)
+                }
+            }
             
             if UIDevice.current.userInterfaceIdiom == .pad {
                 VStack {
@@ -313,11 +326,18 @@ struct ExploreMapView: View {
                     
                     List {
                         ForEach(viewModel.locations) { location in
-                            LocationRow(location: location)
-                                .onTapGesture {
-                                    print("List row tapped for location: \(location.id) - \(location.address)")
-                                    showLocationDetail(for: location)
-                                }
+                            LocationRow(
+                                location: location,
+                                isSelected: selectedLocation?.id == location.id
+                            )
+                            .onTapGesture {
+                                print("List row tapped for location: \(location.id) - \(location.address)")
+                                showLocationDetail(for: location)
+                            }
+                            .listRowBackground(
+                                selectedLocation?.id == location.id ?
+                                Color.blue.opacity(0.1) : Color.clear
+                            )
                         }
                     }
                     .listStyle(PlainListStyle())
@@ -349,17 +369,17 @@ struct TabButton: View {
 
 struct LocationRow: View {
     let location: Location
+    var isSelected: Bool = false
     
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 30))
-                .foregroundColor(.red)
-                .frame(width: 40, height: 40)
+            LocationMarkerView(location: location)
+                .scaleEffect(0.8)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(getLocationDisplayName(location))
                     .font(.headline)
+                    .foregroundColor(isSelected ? .blue : .primary)
                 
                 Text(location.address)
                     .font(.subheadline)
@@ -376,8 +396,10 @@ struct LocationRow: View {
             
             Image(systemName: "chevron.right")
                 .foregroundColor(.gray)
+                .font(.caption)
         }
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
     }
     
     private func getLocationDisplayName(_ location: Location) -> String {

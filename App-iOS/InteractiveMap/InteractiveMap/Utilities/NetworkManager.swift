@@ -146,4 +146,33 @@ class NetworkManager {
                 }
             }
     }
+    
+    func downloadImage(from url: String, completion: @escaping (Result<Data, Error>) -> Void) {
+        // Handle both internal API URLs and direct URLs
+        let imageUrl: String
+        if url.hasPrefix("/api/reviews/images/") {
+            // Convert internal API URL to full URL
+            imageUrl = "\(APIConstants.baseURL)\(url)"
+        } else {
+            imageUrl = url
+        }
+        
+        var headers = HTTPHeaders()
+        if let token = TokenManager.shared.getToken() {
+            headers.add(HTTPHeader(name: "Authorization", value: "Bearer \(token)"))
+        }
+        
+        AF.request(imageUrl, headers: headers)
+            .validate()
+            .responseData { response in
+                switch response.result {
+                case .success(let data):
+                    completion(.success(data))
+                case .failure(let error):
+                    print("Image download failed for URL: \(imageUrl)")
+                    print("Error: \(error)")
+                    completion(.failure(error))
+                }
+            }
+    }
 }

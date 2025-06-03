@@ -5,7 +5,6 @@
 //  Created by Andrii Trybushnyi on 07.04.2025.
 //
 
-
 import SwiftUI
 
 struct RatingView: View {

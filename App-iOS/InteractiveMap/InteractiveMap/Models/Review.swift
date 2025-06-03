@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 struct Review: Codable, Identifiable {
     let id: String
     let userId: String
@@ -14,9 +15,10 @@ struct Review: Codable, Identifiable {
     let content: String
     let createdAt: Date
     let updatedAt: Date?
-    // Add this to the Review.swift file
+    let imageUrls: [String]
+    
     private enum CodingKeys: String, CodingKey {
-        case id, userId, locationId, rating, content, createdAt, updatedAt
+        case id, userId, locationId, rating, content, createdAt, updatedAt, imageUrls
     }
 
     init(from decoder: Decoder) throws {
@@ -26,6 +28,7 @@ struct Review: Codable, Identifiable {
         locationId = try container.decode(String.self, forKey: .locationId)
         rating = try container.decode(Int.self, forKey: .rating)
         content = try container.decode(String.self, forKey: .content)
+        imageUrls = try container.decodeIfPresent([String].self, forKey: .imageUrls) ?? []
         
         let dateFormatter = ISO8601DateFormatter()
         let createdAtString = try container.decode(String.self, forKey: .createdAt)
@@ -38,4 +41,3 @@ struct Review: Codable, Identifiable {
         }
     }
 }
-
