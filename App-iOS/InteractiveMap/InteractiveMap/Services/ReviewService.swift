@@ -24,7 +24,7 @@ class ReviewService {
             }
         }
     }
-    
+
     func createReview(locationId: String, rating: Int, content: String, completion: @escaping (Review?, Error?) -> Void) {
         let parameters: [String: Any] = [
             "locationId": locationId,
@@ -34,7 +34,7 @@ class ReviewService {
         
         if TokenManager.shared.isAuthenticated {
             NetworkManager.shared.request(
-                APIConstants.reviewServiceURL,
+                APIConstants.reviewServiceURL + "/json", // Changed to use the /json endpoint
                 method: .post,
                 parameters: parameters,
                 authenticated: true
