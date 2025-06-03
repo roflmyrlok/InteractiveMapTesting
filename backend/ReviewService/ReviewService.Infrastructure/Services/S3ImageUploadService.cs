@@ -99,6 +99,7 @@ public class S3ImageUploadService : IImageUploadService
     {
         if (files == null || files.Count == 0)
         {
+            _logger.LogInformation("No images provided for upload to review {ReviewId}", reviewId);
             return new List<string>();
         }
 

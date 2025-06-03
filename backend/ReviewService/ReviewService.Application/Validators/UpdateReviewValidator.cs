@@ -20,12 +20,13 @@ public class UpdateReviewValidator : AbstractValidator<UpdateReviewDto>
 
 		RuleFor(x => x.ImageUrls)
 			.Must(urls => urls == null || urls.Count <= 5)
-			.WithMessage("Maximum 5 images allowed per review");
+			.WithMessage("Maximum 5 images allowed per review")
+			.When(x => x.ImageUrls != null && x.ImageUrls.Count > 0);
 
 		RuleForEach(x => x.ImageUrls)
 			.Must(BeValidUrl)
 			.WithMessage("Invalid image URL format")
-			.When(x => x.ImageUrls != null);
+			.When(x => x.ImageUrls != null && x.ImageUrls.Count > 0);
 	}
 
 	private bool BeValidUrl(string url)

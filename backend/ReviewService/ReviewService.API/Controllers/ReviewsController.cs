@@ -93,7 +93,8 @@ public class ReviewsController : ControllerBase
             {
                 LocationId = createReviewDto.LocationId,
                 Rating = createReviewDto.Rating,
-                Content = createReviewDto.Content
+                Content = createReviewDto.Content,
+                ImageUrls = new List<string>()
             };
 
             var createdReview = await _reviewService.CreateReviewAsync(reviewDto, userId);
@@ -132,6 +133,31 @@ public class ReviewsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating review");
+            return StatusCode(500, new { message = "An error occurred while creating the review" });
+        }
+    }
+
+    [HttpPost("json")]
+    [Authorize]
+    public async Task<IActionResult> CreateJson([FromBody] CreateReviewDto createReviewDto)
+    {
+        try
+        {
+            var userId = JwtHelper.GetUserIdFromToken(User);
+            _logger.LogInformation("Creating review via JSON endpoint for user {userId}", userId);
+
+            var createdReview = await _reviewService.CreateReviewAsync(createReviewDto, userId);
+            
+            return CreatedAtAction(nameof(GetById), new { id = createdReview.Id }, createdReview);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access attempt: {message}", ex.Message);
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating review via JSON");
             return StatusCode(500, new { message = "An error occurred while creating the review" });
         }
     }
