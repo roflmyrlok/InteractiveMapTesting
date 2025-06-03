@@ -77,6 +77,15 @@ services:
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}
       - Services__LocationService__BaseUrl=http://locationservice:8080
+      - AWS__AccessKey=${AWS_ACCESS_KEY_ID}
+      - AWS__SecretKey=${AWS_SECRET_ACCESS_KEY}
+      - AWS__Region=${S3_REGION}
+      - S3__AccessKey=${AWS_ACCESS_KEY_ID}
+      - S3__SecretKey=${AWS_SECRET_ACCESS_KEY}
+      - S3__BucketName=${S3_BUCKET_NAME}
+      - S3__Region=${S3_REGION}
+      - S3__BaseUrl=${S3_BASE_URL}
+      - S3__MaxFileSizeInMB=${S3_MAX_FILE_SIZE_MB}
     depends_on:
       postgres:
         condition: service_healthy

@@ -6,11 +6,12 @@ namespace ReviewService.Application.Mapping;
 
 public class MappingProfile : Profile
 {
-    public MappingProfile()
-    {
-        CreateMap<Review, ReviewDto>();
-        CreateMap<CreateReviewDto, Review>();
-        CreateMap<UpdateReviewDto, Review>()
-            .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-    }
+	public MappingProfile()
+	{
+		CreateMap<Review, ReviewDto>();
+		CreateMap<CreateReviewDto, Review>()
+			.ForMember(dest => dest.ImageUrls, opt => opt.MapFrom(src => src.ImageUrls ?? new List<string>()));
+		CreateMap<UpdateReviewDto, Review>()
+			.ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+	}
 }

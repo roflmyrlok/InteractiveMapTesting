@@ -1,3 +1,4 @@
+using Amazon.S3;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ public static class ServiceCollectionExtensions
 		services.AddScoped<IReviewRepository, ReviewRepository>();
 		
 		services.Configure<ServicesConfiguration>(configuration.GetSection("Services"));
+		services.Configure<S3Configuration>(configuration.GetSection("S3"));
 		
 		services.AddHttpClient<ILocationService, HttpLocationService>((serviceProvider, client) => 
 		{
@@ -28,6 +30,10 @@ public static class ServiceCollectionExtensions
 			client.BaseAddress = new Uri(servicesConfig.LocationService.BaseUrl);
 			client.Timeout = TimeSpan.FromSeconds(5);
 		});
+
+		// Register AWS S3 client
+		services.AddAWSService<IAmazonS3>();
+		services.AddScoped<IImageUploadService, S3ImageUploadService>();
     
 		return services;
 	}
