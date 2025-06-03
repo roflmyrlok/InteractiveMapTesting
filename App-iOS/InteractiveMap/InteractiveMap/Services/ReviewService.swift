@@ -9,7 +9,37 @@ import Foundation
 import Alamofire
 
 class ReviewService {
+    private let cacheManager = CacheManager.shared
+    
     func getReviewsForLocation(locationId: String, completion: @escaping ([Review]?, Error?) -> Void) {
+        // Try cache first
+        let cachedReviews = cacheManager.getCachedReviews(for: locationId)
+        if !cachedReviews.isEmpty {
+            print("Returning \(cachedReviews.count) reviews from cache for location \(locationId)")
+            completion(cachedReviews, nil)
+            
+            // Still fetch from network in background to update cache
+            fetchReviewsFromNetwork(locationId: locationId) { [weak self] reviews, error in
+                if let reviews = reviews {
+                    self?.cacheManager.cacheReviews(reviews, for: locationId)
+                }
+            }
+            return
+        }
+        
+        // Fetch from network
+        fetchReviewsFromNetwork(locationId: locationId) { [weak self] reviews, error in
+            if let reviews = reviews {
+                print("Successfully fetched \(reviews.count) reviews from network for location \(locationId)")
+                self?.cacheManager.cacheReviews(reviews, for: locationId)
+                completion(reviews, nil)
+            } else {
+                completion(nil, error)
+            }
+        }
+    }
+    
+    private func fetchReviewsFromNetwork(locationId: String, completion: @escaping ([Review]?, Error?) -> Void) {
         let url = "\(APIConstants.reviewServiceURL)/by-location/\(locationId)"
         
         NetworkManager.shared.request(
@@ -34,13 +64,18 @@ class ReviewService {
         
         if TokenManager.shared.isAuthenticated {
             NetworkManager.shared.request(
-                APIConstants.reviewServiceURL + "/json", // Changed to use the /json endpoint
+                APIConstants.reviewServiceURL + "/json",
                 method: .post,
                 parameters: parameters,
                 authenticated: true
             ) { (result: Result<Review, Error>) in
                 switch result {
                 case .success(let review):
+                    // Update cache with new review
+                    var cachedReviews = CacheManager.shared.getCachedReviews(for: locationId)
+                    cachedReviews.insert(review, at: 0) // Add to beginning
+                    CacheManager.shared.cacheReviews(cachedReviews, for: locationId)
+                    
                     completion(review, nil)
                 case .failure(let error):
                     completion(nil, error)
@@ -110,6 +145,12 @@ class ReviewService {
                     decoder.dateDecodingStrategy = .formatted(formatter)
                     
                     let review = try decoder.decode(Review.self, from: data)
+                    
+                    // Update cache with new review
+                    var cachedReviews = CacheManager.shared.getCachedReviews(for: request.locationId)
+                    cachedReviews.insert(review, at: 0) // Add to beginning
+                    CacheManager.shared.cacheReviews(cachedReviews, for: request.locationId)
+                    
                     completion(review, nil)
                 } catch {
                     print("Decoding error: \(error)")
@@ -136,5 +177,15 @@ class ReviewService {
         default:
             return "image/jpeg"
         }
+    }
+    
+    // MARK: - Cache Management
+    
+    func getCachedReviews(for locationId: String) -> [Review] {
+        return cacheManager.getCachedReviews(for: locationId)
+    }
+    
+    func areReviewsCached(for locationId: String) -> Bool {
+        return cacheManager.areReviewsCached(for: locationId)
     }
 }

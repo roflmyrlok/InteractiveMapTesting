@@ -12,21 +12,75 @@ class ReviewViewModel: ObservableObject {
     @Published var reviews: [Review] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var isOfflineMode = false
     
     private let reviewService = ReviewService()
+    private let cacheManager = CacheManager.shared
     
     func loadReviews(for locationId: String) {
         isLoading = true
         errorMessage = nil
+        isOfflineMode = false
         
         reviewService.getReviewsForLocation(locationId: locationId) { [weak self] reviews, error in
             DispatchQueue.main.async {
                 self?.isLoading = false
                 
                 if let error = error {
-                    self?.errorMessage = error.localizedDescription
+                    // Check if we have cached reviews to fall back on
+                    let cachedReviews = self?.cacheManager.getCachedReviews(for: locationId) ?? []
+                    if !cachedReviews.isEmpty {
+                        self?.reviews = cachedReviews
+                        self?.isOfflineMode = true
+                        self?.errorMessage = nil
+                        print("Using cached reviews due to network error: \(error.localizedDescription)")
+                    } else {
+                        self?.errorMessage = error.localizedDescription
+                        self?.isOfflineMode = false
+                    }
                 } else if let reviews = reviews {
                     self?.reviews = reviews
+                    self?.isOfflineMode = false
+                }
+            }
+        }
+    }
+    
+    func forceRefreshReviews(for locationId: String) {
+        isLoading = true
+        errorMessage = nil
+        isOfflineMode = false
+        
+        // Force network fetch by directly calling the private method
+        let url = "\(APIConstants.reviewServiceURL)/by-location/\(locationId)"
+        
+        NetworkManager.shared.request(
+            url,
+            method: .get
+        ) { (result: Result<[Review], Error>) in
+            DispatchQueue.main.async { [weak self] in
+                self?.isLoading = false
+                
+                switch result {
+                case .success(let reviews):
+                    self?.reviews = reviews
+                    self?.isOfflineMode = false
+                    self?.errorMessage = nil
+                    
+                    // Update cache with fresh data
+                    self?.cacheManager.cacheReviews(reviews, for: locationId)
+                    
+                case .failure(let error):
+                    // Fall back to cached reviews if available
+                    let cachedReviews = self?.cacheManager.getCachedReviews(for: locationId) ?? []
+                    if !cachedReviews.isEmpty {
+                        self?.reviews = cachedReviews
+                        self?.isOfflineMode = true
+                        self?.errorMessage = nil
+                    } else {
+                        self?.errorMessage = error.localizedDescription
+                        self?.isOfflineMode = false
+                    }
                 }
             }
         }
@@ -44,7 +98,9 @@ class ReviewViewModel: ObservableObject {
                     self?.errorMessage = error.localizedDescription
                     completion(false)
                 } else if let review = review {
-                    self?.reviews.append(review)
+                    // Insert the new review at the beginning
+                    self?.reviews.insert(review, at: 0)
+                    self?.isOfflineMode = false
                     completion(true)
                 }
             }
@@ -82,10 +138,22 @@ class ReviewViewModel: ObservableObject {
                     self?.errorMessage = error.localizedDescription
                     completion(false)
                 } else if let review = review {
-                    self?.reviews.append(review)
+                    // Insert the new review at the beginning
+                    self?.reviews.insert(review, at: 0)
+                    self?.isOfflineMode = false
                     completion(true)
                 }
             }
         }
+    }
+    
+    // MARK: - Cache Management
+    
+    func getCachedReviews(for locationId: String) -> [Review] {
+        return cacheManager.getCachedReviews(for: locationId)
+    }
+    
+    func areReviewsCached(for locationId: String) -> Bool {
+        return cacheManager.areReviewsCached(for: locationId)
     }
 }

@@ -10,6 +10,7 @@ struct LocationDetailView: View {
     @State private var showingAddReview = false
     @State private var showingLoginPrompt = false
     @State private var isLoginViewPresented = false
+    @State private var isOfflineMode = false
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -25,18 +26,43 @@ struct LocationDetailView: View {
                     .disabled(true)
                     .cornerRadius(12)
                     
-                    // Location name overlay
-                    Text(getLocationDisplayName(location))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(12)
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(8)
-                        .padding(.bottom, 16)
-                        .padding(.leading, 16)
+                    // Location name overlay with offline indicator
+                    HStack {
+                        Text(getLocationDisplayName(location))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        if isOfflineMode {
+                            Image(systemName: "wifi.slash")
+                                .foregroundColor(.orange)
+                                .font(.caption)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(8)
+                    .padding(.bottom, 16)
+                    .padding(.leading, 16)
                 }
                 .padding(.horizontal)
+                
+                // Offline indicator banner
+                if isOfflineMode {
+                    HStack {
+                        Image(systemName: "wifi.slash")
+                            .foregroundColor(.orange)
+                        Text("Viewing cached content - some information may be outdated")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                }
                 
                 // Location details section
                 VStack(alignment: .leading, spacing: 16) {
@@ -96,6 +122,12 @@ struct LocationDetailView: View {
                                     .font(.title2)
                                 Text("Reviews")
                                     .font(.headline)
+                                
+                                if reviewViewModel.isOfflineMode {
+                                    Image(systemName: "arrow.clockwise.circle")
+                                        .foregroundColor(.gray)
+                                        .font(.caption)
+                                }
                             }
                             
                             Spacer()
@@ -128,7 +160,7 @@ struct LocationDetailView: View {
                                 Spacer()
                             }
                             .padding()
-                        } else if let errorMessage = reviewViewModel.errorMessage {
+                        } else if let errorMessage = reviewViewModel.errorMessage, !reviewViewModel.isOfflineMode {
                             Text(errorMessage)
                                 .foregroundColor(.red)
                                 .padding()
@@ -161,6 +193,17 @@ struct LocationDetailView: View {
                                         .cornerRadius(12)
                                 }
                             }
+                            
+                            if reviewViewModel.isOfflineMode && !reviewViewModel.reviews.isEmpty {
+                                HStack {
+                                    Image(systemName: "info.circle")
+                                        .foregroundColor(.blue)
+                                    Text("Showing cached reviews. Pull to refresh when online.")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                                .padding(.top, 8)
+                            }
                         }
                     }
                 }
@@ -179,15 +222,26 @@ struct LocationDetailView: View {
             AuthView()
                 .environmentObject(AuthViewModel())
                 .onDisappear {
-                    // Check if the user is now authenticated
                     if TokenManager.shared.isAuthenticated {
                         isAuthenticated = true
                     }
                 }
         }
         .onAppear {
+            // Cache this location as viewed (opened detail view)
+            CacheManager.shared.cacheLocationAsViewed(location)
+            
+            // Load reviews (will use cache if available)
             reviewViewModel.loadReviews(for: location.id)
             isAuthenticated = TokenManager.shared.isAuthenticated
+            
+            // Check if we're in offline mode
+            updateOfflineStatus()
+        }
+        .refreshable {
+            // Force refresh from network
+            reviewViewModel.forceRefreshReviews(for: location.id)
+            updateOfflineStatus()
         }
         .alert(isPresented: $showingLoginPrompt) {
             Alert(
@@ -201,18 +255,22 @@ struct LocationDetailView: View {
         }
     }
     
+    private func updateOfflineStatus() {
+        let cacheManager = CacheManager.shared
+        isOfflineMode = !reviewViewModel.isLoading &&
+                       cacheManager.areReviewsCached(for: location.id) &&
+                       reviewViewModel.errorMessage != nil
+        reviewViewModel.isOfflineMode = isOfflineMode
+    }
+    
     private func getLocationDisplayName(_ location: Location) -> String {
-        // Try to get a meaningful name from location details
         if let typeDetail = location.details.first(where: { $0.propertyName.lowercased() == "sheltertype" || $0.propertyName.lowercased() == "type" }) {
             return typeDetail.propertyValue
         }
-        
-        // Fallback to address if no type is found
         return location.address
     }
     
     private func formatPropertyName(_ propertyName: String) -> String {
-        // Convert camelCase and other formats to readable text
         let formatted = propertyName
             .replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)
             .capitalized

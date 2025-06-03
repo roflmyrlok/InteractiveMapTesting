@@ -26,21 +26,27 @@ struct AddReviewView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Rating")) {
-                    HStack {
-                        Text("Your rating:")
-                        Spacer()
-                        RatingView(rating: rating, size: 24)
-                            .padding(.vertical, 8)
+                Section {
+                    VStack(spacing: 20) {
+                        Text("How would you rate this location?")
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                        
+                        InteractiveRatingView(
+                            rating: $rating,
+                            size: 40,
+                            spacing: 15
+                        )
+                        
+                        Text(getRatingDescription(rating))
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
                     }
-                    
-                    Picker("Select a rating", selection: $rating) {
-                        ForEach(1...5, id: \.self) { number in
-                            Text("\(number) star\(number == 1 ? "" : "s")")
-                                .tag(number)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                } header: {
+                    Text("Rating")
                 }
                 
                 Section(header: Text("Review")) {
@@ -49,7 +55,7 @@ struct AddReviewView: View {
                         .overlay(
                             Group {
                                 if reviewContent.isEmpty {
-                                    Text("Write your review here...")
+                                    Text("Share your experience with this location...")
                                         .foregroundColor(.gray)
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 8)
@@ -134,13 +140,14 @@ struct AddReviewView: View {
                                 Text("Submitting...")
                                 Spacer()
                                 ProgressView()
+                                    .scaleEffect(0.8)
                             }
                         } else {
                             Text("Submit Review")
                                 .fontWeight(.medium)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 12)
                                 .background(reviewContent.isEmpty ? Color.gray : Color.blue)
                                 .cornerRadius(8)
                         }
@@ -160,7 +167,12 @@ struct AddReviewView: View {
             .navigationBarItems(
                 leading: Button("Cancel") {
                     presentationMode.wrappedValue.dismiss()
+                },
+                trailing: Button("Submit") {
+                    submitReview()
                 }
+                .disabled(reviewContent.isEmpty || isSubmitting)
+                .foregroundColor(reviewContent.isEmpty ? .gray : .blue)
             )
             .alert(isPresented: $showError) {
                 Alert(
@@ -172,6 +184,23 @@ struct AddReviewView: View {
             .onChange(of: selectedPhotos) { newPhotos in
                 loadSelectedPhotos(newPhotos)
             }
+        }
+    }
+    
+    private func getRatingDescription(_ rating: Int) -> String {
+        switch rating {
+        case 1:
+            return "Poor - Would not recommend"
+        case 2:
+            return "Fair - Below expectations"
+        case 3:
+            return "Good - Meets expectations"
+        case 4:
+            return "Very Good - Above expectations"
+        case 5:
+            return "Excellent - Highly recommend"
+        default:
+            return "Rate this location"
         }
     }
     
@@ -198,7 +227,6 @@ struct AddReviewView: View {
         isSubmitting = true
         
         if selectedImages.isEmpty {
-            // Submit review without images
             viewModel.addReview(for: locationId, rating: rating, content: reviewContent) { success in
                 isSubmitting = false
                 
@@ -213,7 +241,6 @@ struct AddReviewView: View {
                 }
             }
         } else {
-            // Submit review with images
             viewModel.addReviewWithImages(for: locationId, rating: rating, content: reviewContent, images: selectedImages) { success in
                 isSubmitting = false
                 
@@ -231,7 +258,6 @@ struct AddReviewView: View {
     }
 }
 
-// Extension to check if string is nil or empty
 extension Optional where Wrapped == String {
     var isNilOrEmpty: Bool {
         return self == nil || self!.isEmpty
