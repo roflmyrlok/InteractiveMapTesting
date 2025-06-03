@@ -56,6 +56,23 @@ public class ReviewsController : ControllerBase
         return Ok(new { locationId, averageRating });
     }
 
+    [HttpGet("images/{reviewId}/{fileName}")]
+    public async Task<IActionResult> GetImage(Guid reviewId, string fileName)
+    {
+        try
+        {
+            var key = $"reviews/{reviewId}/{fileName}";
+            var imageResult = await _imageUploadService.GetImageStreamAsync(key);
+            
+            return File(imageResult.Stream, imageResult.ContentType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving image {FileName} for review {ReviewId}", fileName, reviewId);
+            return NotFound();
+        }
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> Create([FromForm] CreateReviewWithImagesDto createReviewDto)

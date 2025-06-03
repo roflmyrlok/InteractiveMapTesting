@@ -51,7 +51,8 @@ public class S3ImageUploadService : IImageUploadService
                 Key = key,
                 InputStream = stream,
                 ContentType = file.ContentType,
-                CannedACL = S3CannedACL.PublicRead,
+                // Store privately - no public access needed
+                ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256,
                 Metadata =
                 {
                     ["uploaded-by"] = "review-service",
@@ -60,27 +61,31 @@ public class S3ImageUploadService : IImageUploadService
                 }
             };
 
+            _logger.LogInformation("Attempting to upload image {FileName} for review {ReviewId} to S3 bucket {BucketName} with key {Key}", 
+                file.FileName, reviewId, _s3Config.BucketName, key);
+
             var response = await _s3Client.PutObjectAsync(request);
 
             if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
             {
-                var imageUrl = !string.IsNullOrEmpty(_s3Config.BaseUrl) 
-                    ? $"{_s3Config.BaseUrl.TrimEnd('/')}/{key}"
-                    : $"https://{_s3Config.BucketName}.s3.{_s3Config.Region}.amazonaws.com/{key}";
+                // Return internal reference that will be served through our API
+                var imageUrl = $"/api/reviews/images/{reviewId}/{fileName}";
 
-                _logger.LogInformation("Successfully uploaded image {FileName} for review {ReviewId}. URL: {ImageUrl}", 
+                _logger.LogInformation("Successfully uploaded image {FileName} for review {ReviewId}. Internal URL: {ImageUrl}", 
                     file.FileName, reviewId, imageUrl);
 
                 return imageUrl;
             }
             else
             {
+                _logger.LogError("S3 upload failed with status code: {StatusCode}", response.HttpStatusCode);
                 throw new DomainException("Failed to upload image to S3.");
             }
         }
         catch (AmazonS3Exception ex)
         {
-            _logger.LogError(ex, "S3 error occurred while uploading image for review {ReviewId}", reviewId);
+            _logger.LogError(ex, "S3 error occurred while uploading image for review {ReviewId}. Error Code: {ErrorCode}, Status Code: {StatusCode}", 
+                reviewId, ex.ErrorCode, ex.StatusCode);
             throw new DomainException($"Failed to upload image: {ex.Message}");
         }
         catch (Exception ex)
@@ -120,10 +125,10 @@ public class S3ImageUploadService : IImageUploadService
     {
         try
         {
-            var key = ExtractKeyFromUrl(imageUrl);
+            var key = ExtractKeyFromInternalUrl(imageUrl);
             if (string.IsNullOrEmpty(key))
             {
-                _logger.LogWarning("Could not extract S3 key from URL: {ImageUrl}", imageUrl);
+                _logger.LogWarning("Could not extract S3 key from internal URL: {ImageUrl}", imageUrl);
                 return false;
             }
 
@@ -133,6 +138,8 @@ public class S3ImageUploadService : IImageUploadService
                 Key = key
             };
 
+            _logger.LogInformation("Attempting to delete image with key: {Key} from bucket: {BucketName}", key, _s3Config.BucketName);
+
             var response = await _s3Client.DeleteObjectAsync(request);
             
             _logger.LogInformation("Successfully deleted image with key: {Key}", key);
@@ -140,7 +147,7 @@ public class S3ImageUploadService : IImageUploadService
         }
         catch (AmazonS3Exception ex)
         {
-            _logger.LogError(ex, "S3 error occurred while deleting image: {ImageUrl}", imageUrl);
+            _logger.LogError(ex, "S3 error occurred while deleting image: {ImageUrl}. Error Code: {ErrorCode}", imageUrl, ex.ErrorCode);
             return false;
         }
         catch (Exception ex)
@@ -183,6 +190,32 @@ public class S3ImageUploadService : IImageUploadService
         return _s3Config.AllowedFileTypes.Contains(file.ContentType?.ToLowerInvariant());
     }
 
+    public async Task<ImageStreamResult> GetImageStreamAsync(string imageKey)
+    {
+        try
+        {
+            var request = new GetObjectRequest
+            {
+                BucketName = _s3Config.BucketName,
+                Key = imageKey
+            };
+
+            var response = await _s3Client.GetObjectAsync(request);
+
+            return new ImageStreamResult
+            {
+                Stream = response.ResponseStream,
+                ContentType = response.Headers.ContentType,
+                ContentLength = response.Headers.ContentLength
+            };
+        }
+        catch (AmazonS3Exception ex)
+        {
+            _logger.LogError(ex, "S3 error occurred while retrieving image with key: {Key}. Error Code: {ErrorCode}", imageKey, ex.ErrorCode);
+            throw;
+        }
+    }
+
     private string GenerateFileName(string originalFileName, Guid reviewId)
     {
         var extension = Path.GetExtension(originalFileName);
@@ -192,24 +225,23 @@ public class S3ImageUploadService : IImageUploadService
         return $"{timestamp}_{uniqueId}{extension}";
     }
 
-    private string ExtractKeyFromUrl(string imageUrl)
+    private string ExtractKeyFromInternalUrl(string imageUrl)
     {
         try
         {
             if (string.IsNullOrEmpty(imageUrl))
                 return string.Empty;
 
-            // Handle custom domain URLs
-            if (!string.IsNullOrEmpty(_s3Config.BaseUrl) && imageUrl.StartsWith(_s3Config.BaseUrl))
+            // Extract from internal URL format: /api/reviews/images/{reviewId}/{fileName}
+            if (imageUrl.StartsWith("/api/reviews/images/"))
             {
-                return imageUrl.Substring(_s3Config.BaseUrl.TrimEnd('/').Length + 1);
-            }
-
-            // Handle standard S3 URLs
-            var uri = new Uri(imageUrl);
-            if (uri.Host.Contains("amazonaws.com"))
-            {
-                return uri.AbsolutePath.TrimStart('/');
+                var pathParts = imageUrl.Split('/');
+                if (pathParts.Length >= 5)
+                {
+                    var reviewId = pathParts[4];
+                    var fileName = pathParts[5];
+                    return $"reviews/{reviewId}/{fileName}";
+                }
             }
 
             return string.Empty;

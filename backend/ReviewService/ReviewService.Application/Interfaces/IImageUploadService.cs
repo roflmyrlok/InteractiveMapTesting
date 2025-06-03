@@ -9,4 +9,12 @@ public interface IImageUploadService
 	Task<bool> DeleteImageAsync(string imageUrl);
 	Task<bool> DeleteImagesAsync(List<string> imageUrls);
 	bool IsValidImageFile(IFormFile file);
+	Task<ImageStreamResult> GetImageStreamAsync(string imageKey);
+}
+
+public class ImageStreamResult
+{
+	public Stream Stream { get; set; }
+	public string ContentType { get; set; }
+	public long ContentLength { get; set; }
 }
