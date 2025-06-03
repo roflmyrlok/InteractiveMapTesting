@@ -40,10 +40,8 @@ services:
     build:
       context: ../backend/UserService
       dockerfile: Dockerfile
-    # Using internal networking only, not exposing to host directly
     expose:
       - "8080"
-    # Keep debugging ports if needed
     ports:
       - "127.0.0.1:${USERSERVICE_HTTP_PORT}:8080"
     environment:
@@ -63,23 +61,22 @@ services:
     build:
       context: ../backend/ReviewService
       dockerfile: Dockerfile
-    # Using internal networking only, not exposing to host directly
     expose:
       - "8080"
-    # Keep debugging ports if needed
     ports:
       - "127.0.0.1:${REVIEWSERVICE_HTTP_PORT}:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=${REVIEWSERVICE_CONNECTION_STRING}
       - Jwt__Key=${JWT_KEY}
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}
       - Services__LocationService__BaseUrl=http://locationservice:8080
-      - AWS__AccessKey=${AWS_ACCESS_KEY_ID}
-      - AWS__SecretKey=${AWS_SECRET_ACCESS_KEY}
-      - AWS__Region=${S3_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${S3_REGION}
       - S3__AccessKey=${AWS_ACCESS_KEY_ID}
       - S3__SecretKey=${AWS_SECRET_ACCESS_KEY}
       - S3__BucketName=${S3_BUCKET_NAME}
@@ -96,10 +93,8 @@ services:
     build:
       context: ../backend/LocationService
       dockerfile: Dockerfile
-    # Using internal networking only, not exposing to host directly
     expose:
       - "8080"
-    # Keep debugging ports if needed
     ports:
       - "127.0.0.1:${LOCATIONSERVICE_HTTP_PORT}:8080"
     environment:
