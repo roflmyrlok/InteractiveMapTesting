@@ -42,9 +42,13 @@ class UserService {
             return
         }
         
+        print("DEBUG: Making changePassword request")
+        print("DEBUG: URL: \(APIConstants.userServiceURL)/change-password")
+        print("DEBUG: Token present: \(TokenManager.shared.getToken() != nil)")
+        
         NetworkManager.shared.request(
             APIConstants.userServiceURL + "/change-password",
-            method: .put,
+            method: .post, // FIX: Changed from .put to .post to match backend
             parameters: parameters,
             authenticated: true
         ) { (result: Result<PasswordChangeResponse, Error>) in
@@ -52,6 +56,7 @@ class UserService {
             case .success(let response):
                 completion(true, response.message)
             case .failure(let error):
+                print("DEBUG: changePassword failed with error: \(error)")
                 let errorMessage = self.extractErrorMessage(from: error)
                 completion(false, errorMessage)
             }
@@ -68,9 +73,13 @@ class UserService {
             return
         }
         
+        print("DEBUG: Making deleteAccount request")
+        print("DEBUG: URL: \(APIConstants.userServiceURL)/delete-account")
+        print("DEBUG: Token present: \(TokenManager.shared.getToken() != nil)")
+        
         NetworkManager.shared.request(
             APIConstants.userServiceURL + "/delete-account",
-            method: .delete,
+            method: .delete, // Correct method - matches backend
             parameters: parameters,
             authenticated: true
         ) { (result: Result<EmptyResponse, Error>) in
@@ -79,6 +88,7 @@ class UserService {
                 TokenManager.shared.clearToken()
                 completion(true, "Account deleted successfully")
             case .failure(let error):
+                print("DEBUG: deleteAccount failed with error: \(error)")
                 let errorMessage = self.extractErrorMessage(from: error)
                 completion(false, errorMessage)
             }

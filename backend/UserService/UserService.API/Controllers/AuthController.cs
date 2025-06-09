@@ -139,11 +139,12 @@ namespace UserService.API.Controllers
                 logger.LogDebug("Claim: {Type} = '{Value}'", claim.Type, claim.Value);
             }
 
+            // FIX: Use UTC time consistently
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
+                expires: DateTime.UtcNow.AddHours(1), // Consistent UTC time
                 signingCredentials: credentials);
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
@@ -155,6 +156,7 @@ namespace UserService.API.Controllers
                 var subClaim = decodedToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
                 
                 logger.LogInformation("Token verification - Sub claim: '{SubClaim}'", subClaim?.Value);
+                logger.LogInformation("Token expires at: {ExpiryTime} UTC", token.ValidTo);
                 
                 if (string.IsNullOrEmpty(subClaim?.Value))
                 {

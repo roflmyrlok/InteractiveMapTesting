@@ -136,7 +136,7 @@ class ReviewImageLoader: ObservableObject {
         loadingUrls.insert(url)
         isLoading = true
         
-        NetworkManager.shared.downloadImage(from: url) { [weak self] result in
+        NetworkManager.shared.downloadImage(from: url) { [weak self] (result: Result<Data, Error>) in
             DispatchQueue.main.async {
                 self?.loadingUrls.remove(url)
                 self?.isLoading = self?.loadingUrls.isEmpty == false
