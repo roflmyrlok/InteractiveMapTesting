@@ -1,5 +1,6 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -25,77 +26,108 @@ namespace UserService.API.Controllers
         }
 
         /// <summary>
-        /// Extracts the user ID from JWT claims with fallback mechanisms
+        /// Extracts user ID from JWT claims with multiple fallback mechanisms
         /// </summary>
-        private Guid? GetCurrentUserId()
+        private Guid GetCurrentUserIdFromClaims()
         {
             try
             {
-                // Try multiple claim types that might contain the user ID
-                var possibleClaims = new[]
+                _logger.LogInformation("=== Extracting User ID from Claims ===");
+                _logger.LogInformation("IsAuthenticated: {IsAuth}", User.Identity?.IsAuthenticated);
+                _logger.LogInformation("Claims count: {Count}", User.Claims.Count());
+
+                // Log all claims for debugging
+                foreach (var claim in User.Claims)
+                {
+                    _logger.LogInformation("Available claim: Type='{Type}', Value='{Value}'", claim.Type, claim.Value);
+                }
+
+                // Try multiple claim types in order of preference
+                var claimTypes = new[]
                 {
                     JwtRegisteredClaimNames.Sub,           // "sub"
-                    ClaimTypes.NameIdentifier,             // "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-                    "sub",                                 // Direct "sub" claim
-                    "user_id",                             // Alternative user ID claim
-                    "userId"                               // Another alternative
+                    ClaimTypes.NameIdentifier,             // Microsoft claim
+                    "sub",                                 // Direct string
+                    "user_id",                             // Alternative
+                    "userId"                               // CamelCase
                 };
 
-                foreach (var claimType in possibleClaims)
+                string userIdValue = null;
+                string foundClaimType = null;
+
+                foreach (var claimType in claimTypes)
                 {
-                    var userIdClaim = User.FindFirst(claimType)?.Value;
-                    if (!string.IsNullOrEmpty(userIdClaim))
+                    var claim = User.FindFirst(claimType);
+                    if (claim != null && !string.IsNullOrWhiteSpace(claim.Value))
                     {
-                        if (Guid.TryParse(userIdClaim, out var userId))
-                        {
-                            _logger.LogDebug("Successfully extracted user ID {UserId} from claim type {ClaimType}", userId, claimType);
-                            return userId;
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Found user ID claim {ClaimType} with value {Value}, but could not parse as GUID", claimType, userIdClaim);
-                        }
+                        userIdValue = claim.Value;
+                        foundClaimType = claimType;
+                        _logger.LogInformation("Found user ID '{UserId}' in claim type '{ClaimType}'", userIdValue, claimType);
+                        break;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Claim type '{ClaimType}' not found or empty", claimType);
                     }
                 }
 
-                // Debug: Log all available claims
-                _logger.LogWarning("Could not find user ID in any expected claim. Available claims:");
-                foreach (var claim in User.Claims)
+                if (string.IsNullOrWhiteSpace(userIdValue))
                 {
-                    _logger.LogWarning("Claim: Type='{Type}', Value='{Value}'", claim.Type, claim.Value);
+                    // Last resort - search all claims for anything that looks like a user ID
+                    var userClaim = User.Claims.FirstOrDefault(c =>
+                        c.Type.Contains("nameidentifier", StringComparison.OrdinalIgnoreCase) ||
+                        c.Type.Contains("userid", StringComparison.OrdinalIgnoreCase) ||
+                        c.Type.Contains("sub", StringComparison.OrdinalIgnoreCase));
+
+                    if (userClaim != null && !string.IsNullOrWhiteSpace(userClaim.Value))
+                    {
+                        userIdValue = userClaim.Value;
+                        foundClaimType = userClaim.Type;
+                        _logger.LogInformation("Found user ID '{UserId}' in fallback claim '{ClaimType}'", userIdValue, foundClaimType);
+                    }
                 }
 
-                return null;
+                if (string.IsNullOrWhiteSpace(userIdValue))
+                {
+                    _logger.LogError("CRITICAL: No user ID found in any claim!");
+                    throw new UnauthorizedAccessException("User ID not found in authentication token");
+                }
+
+                if (!Guid.TryParse(userIdValue, out var userId))
+                {
+                    _logger.LogError("User ID '{UserIdValue}' from claim '{ClaimType}' is not a valid GUID", userIdValue, foundClaimType);
+                    throw new UnauthorizedAccessException("Invalid user ID format in authentication token");
+                }
+
+                _logger.LogInformation("Successfully extracted and parsed user ID: {UserId}", userId);
+                return userId;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error extracting user ID from claims");
-                return null;
+                throw new UnauthorizedAccessException("Failed to extract user ID from authentication token", ex);
             }
         }
 
-        /// <summary>
-        /// Validates authentication and extracts user ID, returning appropriate error response if invalid
-        /// </summary>
-        private IActionResult ValidateAuthenticationAndGetUserId(out Guid userId)
+        [HttpGet]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        public async Task<IActionResult> GetAll()
         {
-            userId = Guid.Empty;
-
-            if (!User.Identity?.IsAuthenticated == true)
+            try
             {
-                _logger.LogWarning("User is not authenticated");
-                return Unauthorized("Authentication required");
+                var users = await _userService.GetAllUsersAsync();
+                return Ok(users);
             }
-
-            var extractedUserId = GetCurrentUserId();
-            if (!extractedUserId.HasValue)
+            catch (DomainException ex)
             {
-                _logger.LogWarning("Could not extract valid user ID from authentication token");
-                return Unauthorized("Invalid authentication token - user ID not found");
+                _logger.LogWarning("Domain exception in GetAll: {Message}", ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
-
-            userId = extractedUserId.Value;
-            return null; // No error
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in GetAll");
+                return StatusCode(500, new { message = "An error occurred while retrieving users" });
+            }
         }
 
         [HttpGet("current")]
@@ -106,9 +138,7 @@ namespace UserService.API.Controllers
             {
                 _logger.LogInformation("GetCurrentUser called");
 
-                var authResult = ValidateAuthenticationAndGetUserId(out var userId);
-                if (authResult != null) return authResult;
-
+                var userId = GetCurrentUserIdFromClaims();
                 _logger.LogInformation("Fetching current user information for user: {UserId}", userId);
                 
                 var user = await _userService.GetUserByIdAsync(userId);
@@ -120,6 +150,11 @@ namespace UserService.API.Controllers
 
                 _logger.LogInformation("Successfully retrieved user information for: {Username}", user.Username);
                 return Ok(user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Authentication error in GetCurrentUser: {Message}", ex.Message);
+                return Unauthorized(new { message = ex.Message });
             }
             catch (DomainException ex)
             {
@@ -141,8 +176,7 @@ namespace UserService.API.Controllers
             {
                 _logger.LogInformation("GetById called for user ID: {Id}", id);
                 
-                var authResult = ValidateAuthenticationAndGetUserId(out var currentUserId);
-                if (authResult != null) return authResult;
+                var currentUserId = GetCurrentUserIdFromClaims();
 
                 // Users can only get their own information unless they have admin role
                 if (id != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
@@ -159,6 +193,11 @@ namespace UserService.API.Controllers
                 }
 
                 return Ok(user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Authentication error in GetById: {Message}", ex.Message);
+                return Unauthorized(new { message = ex.Message });
             }
             catch (DomainException ex)
             {
@@ -263,13 +302,12 @@ namespace UserService.API.Controllers
             {
                 _logger.LogInformation("Update user called");
                 
-                var authResult = ValidateAuthenticationAndGetUserId(out var userId);
-                if (authResult != null) return authResult;
+                var currentUserId = GetCurrentUserIdFromClaims();
 
                 // Ensure user can only update their own information
-                if (updateUserDto.Id != userId && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+                if (updateUserDto.Id != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
                 {
-                    _logger.LogWarning("User {CurrentUserId} attempted to update user {RequestedUserId} without permission", userId, updateUserDto.Id);
+                    _logger.LogWarning("User {CurrentUserId} attempted to update user {RequestedUserId} without permission", currentUserId, updateUserDto.Id);
                     return Forbid("You can only update your own user information");
                 }
 
@@ -278,6 +316,11 @@ namespace UserService.API.Controllers
                 _logger.LogInformation("User updated successfully: {UserId}", updatedUser.Id);
                 
                 return Ok(updatedUser);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Authentication error in Update: {Message}", ex.Message);
+                return Unauthorized(new { message = ex.Message });
             }
             catch (DomainException ex)
             {
@@ -291,17 +334,17 @@ namespace UserService.API.Controllers
             }
         }
 
+        // FIX: Changed from POST to PUT and added POST as well for compatibility
         [HttpPut("change-password")]
+        [HttpPost("change-password")]  // Adding POST for iOS compatibility
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
         {
             try
             {
-                _logger.LogInformation("ChangePassword called");
+                _logger.LogInformation("ChangePassword called via {Method}", Request.Method);
 
-                var authResult = ValidateAuthenticationAndGetUserId(out var userId);
-                if (authResult != null) return authResult;
-
+                var userId = GetCurrentUserIdFromClaims();
                 _logger.LogInformation("Attempting to change password for user: {UserId}", userId);
                 
                 var result = await _userService.ChangePasswordAsync(userId, changePasswordDto);
@@ -315,6 +358,11 @@ namespace UserService.API.Controllers
                 _logger.LogWarning("Failed to change password for user: {UserId}", userId);
                 return BadRequest(new { message = "Failed to change password" });
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Authentication error in ChangePassword: {Message}", ex.Message);
+                return Unauthorized(new { message = ex.Message });
+            }
             catch (DomainException ex)
             {
                 _logger.LogWarning("Domain exception in ChangePassword: {Message}", ex.Message);
@@ -327,23 +375,28 @@ namespace UserService.API.Controllers
             }
         }
 
+        // FIX: Adding POST as well for iOS compatibility
         [HttpDelete("delete-account")]
+        [HttpPost("delete-account")]  // Adding POST for iOS compatibility
         [Authorize]
         public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountDto deleteAccountDto)
         {
             try
             {
-                _logger.LogInformation("DeleteAccount called");
+                _logger.LogInformation("DeleteAccount called via {Method}", Request.Method);
 
-                var authResult = ValidateAuthenticationAndGetUserId(out var userId);
-                if (authResult != null) return authResult;
-
+                var userId = GetCurrentUserIdFromClaims();
                 _logger.LogInformation("Attempting to delete account for user: {UserId}", userId);
                 
                 await _userService.DeleteUserAccountAsync(userId, deleteAccountDto.CurrentPassword);
                 
                 _logger.LogInformation("Account deleted successfully for user: {UserId}", userId);
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Authentication error in DeleteAccount: {Message}", ex.Message);
+                return Unauthorized(new { message = ex.Message });
             }
             catch (DomainException ex)
             {
@@ -365,8 +418,7 @@ namespace UserService.API.Controllers
             {
                 _logger.LogInformation("Delete called for user ID: {Id}", id);
                 
-                var authResult = ValidateAuthenticationAndGetUserId(out var currentUserId);
-                if (authResult != null) return authResult;
+                var currentUserId = GetCurrentUserIdFromClaims();
 
                 // Prevent users from deleting themselves
                 if (id == currentUserId)
@@ -380,6 +432,11 @@ namespace UserService.API.Controllers
                 _logger.LogInformation("User {UserId} deleted successfully by admin {AdminUserId}", id, currentUserId);
                 
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Authentication error in Delete: {Message}", ex.Message);
+                return Unauthorized(new { message = ex.Message });
             }
             catch (DomainException ex)
             {
