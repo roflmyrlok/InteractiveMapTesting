@@ -108,7 +108,7 @@ class NetworkManager {
                             let dateString = try container.decode(String.self)
                             
                             // Try multiple date formats
-                            let formatters = [
+                            let formatters: [DateFormatter] = [
                                 // ISO 8601 with fractional seconds
                                 {
                                     let formatter = DateFormatter()
@@ -129,6 +129,13 @@ class NetworkManager {
                                     formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
                                     formatter.timeZone = TimeZone(abbreviation: "UTC")
                                     return formatter
+                                }(),
+                                // ISO 8601 with fractional seconds and 'Z'
+                                {
+                                    let formatter = DateFormatter()
+                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
+                                    formatter.timeZone = TimeZone(abbreviation: "UTC")
+                                    return formatter
                                 }()
                             ]
                             
@@ -136,6 +143,19 @@ class NetworkManager {
                                 if let date = formatter.date(from: dateString) {
                                     return date
                                 }
+                            }
+                            
+                            // Fallback to ISO8601DateFormatter
+                            let iso8601Formatter = ISO8601DateFormatter()
+                            iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                            if let date = iso8601Formatter.date(from: dateString) {
+                                return date
+                            }
+                            
+                            // If all else fails, try without fractional seconds
+                            iso8601Formatter.formatOptions = [.withInternetDateTime]
+                            if let date = iso8601Formatter.date(from: dateString) {
+                                return date
                             }
                             
                             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(dateString)")
