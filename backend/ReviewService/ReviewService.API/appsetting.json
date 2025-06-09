@@ -1,0 +1,31 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=postgres;Port=5432;Database=microservices;Username=postgres;Password=postgres_Secure_Pwd_123!"
+  },
+  "Jwt": {
+    "Key": "YourSuperSecretKey12345678901234567890",
+    "Issuer": "MicroservicesApp",
+    "Audience": "MicroservicesClient"
+  },
+  "Services": {
+    "LocationService": {
+      "BaseUrl": "http://locationservice:8080"
+    }
+  },
+  "S3": {
+    "AccessKey": "placeholder",
+    "SecretKey": "placeholder",
+    "BucketName": "placeholder",
+    "Region": "us-east-1",
+    "BaseUrl": "",
+    "MaxFileSizeInMB": 5,
+    "AllowedFileTypes": ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+  }
+}

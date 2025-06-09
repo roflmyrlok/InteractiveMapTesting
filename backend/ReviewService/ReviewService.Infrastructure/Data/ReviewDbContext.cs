@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ReviewService.Domain.Entities;
+using System.Text.Json;
 
 namespace ReviewService.Infrastructure.Data;
 
@@ -33,6 +34,12 @@ public class ReviewDbContext : DbContext
 
 			entity.Property(e => e.CreatedAt)
 				.IsRequired();
+
+			entity.Property(e => e.ImageUrls)
+				.HasConversion(
+					v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+					v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>())
+				.HasColumnType("text");
 			
 			entity.HasIndex(e => e.UserId);
 			entity.HasIndex(e => e.LocationId);

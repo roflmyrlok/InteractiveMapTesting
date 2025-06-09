@@ -23,8 +23,78 @@ public partial class Program
             })
             .ConfigureAppConfiguration((hostingContext, config) =>
             {
+                // Load environment variables first
                 config.AddEnvironmentVariables();
+                
+                // Then process configuration to expand environment variable references
+                var builtConfig = config.Build();
+                config.Sources.Clear();
+                
+                // Re-add configuration sources with environment variable expansion
+                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                      .AddJsonFile($"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+                
+                config.AddEnvironmentVariables();
+                
+                // Custom configuration provider to expand ${VAR} syntax
+                config.Add(new EnvironmentVariableExpansionConfigurationSource());
             });
+}
+
+// Custom configuration source to expand ${VAR} syntax in appsettings.json
+public class EnvironmentVariableExpansionConfigurationSource : IConfigurationSource
+{
+    public IConfigurationProvider Build(IConfigurationBuilder builder)
+    {
+        return new EnvironmentVariableExpansionConfigurationProvider();
+    }
+}
+
+public class EnvironmentVariableExpansionConfigurationProvider : ConfigurationProvider
+{
+    public override void Load()
+    {
+        var builder = new ConfigurationBuilder();
+        builder.AddJsonFile("appsettings.json", optional: true);
+        builder.AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true);
+        
+        var config = builder.Build();
+        
+        foreach (var kvp in config.AsEnumerable())
+        {
+            if (kvp.Value != null)
+            {
+                Data[kvp.Key] = ExpandEnvironmentVariables(kvp.Value);
+            }
+        }
+    }
+    
+    private string ExpandEnvironmentVariables(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+        
+        // Replace ${VAR_NAME} with environment variable values
+        var result = value;
+        var start = 0;
+        
+        while ((start = result.IndexOf("${", start)) >= 0)
+        {
+            var end = result.IndexOf("}", start + 2);
+            if (end > start)
+            {
+                var varName = result.Substring(start + 2, end - start - 2);
+                var varValue = Environment.GetEnvironmentVariable(varName) ?? "";
+                result = result.Substring(0, start) + varValue + result.Substring(end + 1);
+                start = start + varValue.Length;
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        return result;
+    }
 }
 
 public class Startup
@@ -57,6 +127,18 @@ public class Startup
         
         services.AddApplicationServices();
         services.AddInfrastructureServices(_configuration);
+
+        // Configure AWS credentials for S3
+        var awsAccessKey = _configuration["S3:AccessKey"];
+        var awsSecretKey = _configuration["S3:SecretKey"];
+        var awsRegion = _configuration["S3:Region"] ?? "us-east-1";
+
+        if (!string.IsNullOrEmpty(awsAccessKey) && !string.IsNullOrEmpty(awsSecretKey))
+        {
+            Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", awsAccessKey);
+            Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", awsSecretKey);
+            Environment.SetEnvironmentVariable("AWS_DEFAULT_REGION", awsRegion);
+        }
     }
 
     private void ConfigureJwtAuthentication(IServiceCollection services)

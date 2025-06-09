@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kyiv.Data", "Kyiv.Data\Kyiv.Data.csproj", "{B24E0E0D-8CA5-4466-B016-05DD92D6A309}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kyiv.Data", "Kyiv.Data\Kyiv.Data.csproj", "{0191927D-7FFC-4C1C-9578-967F2A3C34AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B24E0E0D-8CA5-4466-B016-05DD92D6A309}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B24E0E0D-8CA5-4466-B016-05DD92D6A309}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B24E0E0D-8CA5-4466-B016-05DD92D6A309}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B24E0E0D-8CA5-4466-B016-05DD92D6A309}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0191927D-7FFC-4C1C-9578-967F2A3C34AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0191927D-7FFC-4C1C-9578-967F2A3C34AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0191927D-7FFC-4C1C-9578-967F2A3C34AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0191927D-7FFC-4C1C-9578-967F2A3C34AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

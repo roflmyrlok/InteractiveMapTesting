@@ -25,27 +25,8 @@
 		};
 /* End PBXBuildRule section */
 
-/* Begin PBXContainerItemProxy section */
-		801D19332DA3B3D50087ED3B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 801D191A2DA3B3D20087ED3B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 801D19212DA3B3D20087ED3B;
-			remoteInfo = InteractiveMap;
-		};
-		801D193D2DA3B3D50087ED3B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 801D191A2DA3B3D20087ED3B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 801D19212DA3B3D20087ED3B;
-			remoteInfo = InteractiveMap;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
 		801D19222DA3B3D20087ED3B /* InteractiveMap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InteractiveMap.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		801D19322DA3B3D50087ED3B /* InteractiveMapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteractiveMapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		801D193C2DA3B3D50087ED3B /* InteractiveMapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteractiveMapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -53,28 +34,30 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Views/Components/AsyncImageView.swift,
 			);
 			target = 801D19212DA3B3D20087ED3B /* InteractiveMap */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		8074D4CA2DEEF84C002A5C66 /* Exceptions for "InteractiveMap" folder in "Copy Bundle Resources" phase from "InteractiveMap" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 801D19202DA3B3D20087ED3B /* Resources */;
+			membershipExceptions = (
+				Views/Components/AsyncImageView.swift,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		801D19242DA3B3D20087ED3B /* InteractiveMap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				804636992DA7BC6A00349190 /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */,
+				8074D4CA2DEEF84C002A5C66 /* Exceptions for "InteractiveMap" folder in "Copy Bundle Resources" phase from "InteractiveMap" target */,
 			);
 			path = InteractiveMap;
-			sourceTree = "<group>";
-		};
-		801D19352DA3B3D50087ED3B /* InteractiveMapTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = InteractiveMapTests;
-			sourceTree = "<group>";
-		};
-		801D193F2DA3B3D50087ED3B /* InteractiveMapUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = InteractiveMapUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -89,20 +72,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		801D192F2DA3B3D50087ED3B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		801D19392DA3B3D50087ED3B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -110,8 +79,6 @@
 			isa = PBXGroup;
 			children = (
 				801D19242DA3B3D20087ED3B /* InteractiveMap */,
-				801D19352DA3B3D50087ED3B /* InteractiveMapTests */,
-				801D193F2DA3B3D50087ED3B /* InteractiveMapUITests */,
 				801D19232DA3B3D20087ED3B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -120,8 +87,6 @@
 			isa = PBXGroup;
 			children = (
 				801D19222DA3B3D20087ED3B /* InteractiveMap.app */,
-				801D19322DA3B3D50087ED3B /* InteractiveMapTests.xctest */,
-				801D193C2DA3B3D50087ED3B /* InteractiveMapUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -154,52 +119,6 @@
 			productReference = 801D19222DA3B3D20087ED3B /* InteractiveMap.app */;
 			productType = "com.apple.product-type.application";
 		};
-		801D19312DA3B3D50087ED3B /* InteractiveMapTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 801D19492DA3B3D50087ED3B /* Build configuration list for PBXNativeTarget "InteractiveMapTests" */;
-			buildPhases = (
-				801D192E2DA3B3D50087ED3B /* Sources */,
-				801D192F2DA3B3D50087ED3B /* Frameworks */,
-				801D19302DA3B3D50087ED3B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				801D19342DA3B3D50087ED3B /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				801D19352DA3B3D50087ED3B /* InteractiveMapTests */,
-			);
-			name = InteractiveMapTests;
-			packageProductDependencies = (
-			);
-			productName = InteractiveMapTests;
-			productReference = 801D19322DA3B3D50087ED3B /* InteractiveMapTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		801D193B2DA3B3D50087ED3B /* InteractiveMapUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 801D194C2DA3B3D50087ED3B /* Build configuration list for PBXNativeTarget "InteractiveMapUITests" */;
-			buildPhases = (
-				801D19382DA3B3D50087ED3B /* Sources */,
-				801D19392DA3B3D50087ED3B /* Frameworks */,
-				801D193A2DA3B3D50087ED3B /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				801D193E2DA3B3D50087ED3B /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				801D193F2DA3B3D50087ED3B /* InteractiveMapUITests */,
-			);
-			name = InteractiveMapUITests;
-			packageProductDependencies = (
-			);
-			productName = InteractiveMapUITests;
-			productReference = 801D193C2DA3B3D50087ED3B /* InteractiveMapUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -212,14 +131,6 @@
 				TargetAttributes = {
 					801D19212DA3B3D20087ED3B = {
 						CreatedOnToolsVersion = 16.1;
-					};
-					801D19312DA3B3D50087ED3B = {
-						CreatedOnToolsVersion = 16.1;
-						TestTargetID = 801D19212DA3B3D20087ED3B;
-					};
-					801D193B2DA3B3D50087ED3B = {
-						CreatedOnToolsVersion = 16.1;
-						TestTargetID = 801D19212DA3B3D20087ED3B;
 					};
 				};
 			};
@@ -242,8 +153,6 @@
 			projectRoot = "";
 			targets = (
 				801D19212DA3B3D20087ED3B /* InteractiveMap */,
-				801D19312DA3B3D50087ED3B /* InteractiveMapTests */,
-				801D193B2DA3B3D50087ED3B /* InteractiveMapUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -256,37 +165,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		801D19302DA3B3D50087ED3B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		801D193A2DA3B3D50087ED3B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		801D192E2DA3B3D50087ED3B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		801D19382DA3B3D50087ED3B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		8097DDA82DA44299000C6E66 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -295,19 +176,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		801D19342DA3B3D50087ED3B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 801D19212DA3B3D20087ED3B /* InteractiveMap */;
-			targetProxy = 801D19332DA3B3D50087ED3B /* PBXContainerItemProxy */;
-		};
-		801D193E2DA3B3D50087ED3B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 801D19212DA3B3D20087ED3B /* InteractiveMap */;
-			targetProxy = 801D193D2DA3B3D50087ED3B /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		801D19442DA3B3D50087ED3B /* Debug */ = {
@@ -457,10 +325,11 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -492,78 +361,11 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		801D194A2DA3B3D50087ED3B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.purrfect.InteractiveMapTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/InteractiveMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/InteractiveMap";
-			};
-			name = Debug;
-		};
-		801D194B2DA3B3D50087ED3B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.purrfect.InteractiveMapTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/InteractiveMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/InteractiveMap";
-			};
-			name = Release;
-		};
-		801D194D2DA3B3D50087ED3B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.purrfect.InteractiveMapUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = InteractiveMap;
-			};
-			name = Debug;
-		};
-		801D194E2DA3B3D50087ED3B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.purrfect.InteractiveMapUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = InteractiveMap;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -584,24 +386,6 @@
 			buildConfigurations = (
 				801D19472DA3B3D50087ED3B /* Debug */,
 				801D19482DA3B3D50087ED3B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		801D19492DA3B3D50087ED3B /* Build configuration list for PBXNativeTarget "InteractiveMapTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				801D194A2DA3B3D50087ED3B /* Debug */,
-				801D194B2DA3B3D50087ED3B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		801D194C2DA3B3D50087ED3B /* Build configuration list for PBXNativeTarget "InteractiveMapUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				801D194D2DA3B3D50087ED3B /* Debug */,
-				801D194E2DA3B3D50087ED3B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -2,20 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>Exception Domains</key>
-	<dict>
-		<key>ec2-3-122-118-9.eu-central-1.compute.amazonaws.com</key>
-		<dict>
-			<key>NSExceptionAllowsInsecureHTTPLoads"</key>
-			<true/>
-			<key>NSIncludesSubdomains</key>
-			<true/>
-		</dict>
-	</dict>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs access to your photo library to let you add photos to your reviews.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs access to your camera to let you take photos for your reviews.</string>
 </dict>
 </plist>

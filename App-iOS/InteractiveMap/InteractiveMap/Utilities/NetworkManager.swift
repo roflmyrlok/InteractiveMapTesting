@@ -1,4 +1,3 @@
-// App-iOS/InteractiveMap/InteractiveMap/Utilities/NetworkManager.swift
 import Foundation
 import Alamofire
 
@@ -43,13 +42,91 @@ class NetworkManager {
                   encoding: method == .get ? URLEncoding.default : JSONEncoding.default,
                   headers: finalHeaders)
             .validate()
-            .responseDecodable(of: T.self) { response in
+            .responseData { response in
                 print("Response status code: \(String(describing: response.response?.statusCode))")
                 
+                // Log raw response data for debugging
+                if let data = response.data {
+                    print("Raw response data size: \(data.count) bytes")
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        print("Raw JSON response: \(jsonString.prefix(500))...")
+                    }
+                }
+                
                 switch response.result {
-                case .success(let value):
+                case .success(let data):
                     print("Request successful: \(url)")
-                    completion(.success(value))
+                    
+                    // Attempt to decode the data
+                    do {
+                        let decoder = JSONDecoder()
+                        
+                        // Configure custom date decoding strategy to handle multiple formats
+                        decoder.dateDecodingStrategy = .custom { decoder in
+                            let container = try decoder.singleValueContainer()
+                            let dateString = try container.decode(String.self)
+                            
+                            // Try multiple date formats
+                            let formatters: [DateFormatter] = [
+                                {
+                                    let formatter = DateFormatter()
+                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
+                                    formatter.timeZone = TimeZone(abbreviation: "UTC")
+                                    return formatter
+                                }(),
+                                {
+                                    let formatter = DateFormatter()
+                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+                                    formatter.timeZone = TimeZone(abbreviation: "UTC")
+                                    return formatter
+                                }(),
+                                {
+                                    let formatter = DateFormatter()
+                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+                                    formatter.timeZone = TimeZone(abbreviation: "UTC")
+                                    return formatter
+                                }()
+                            ]
+                            
+                            for formatter in formatters {
+                                if let date = formatter.date(from: dateString) {
+                                    return date
+                                }
+                            }
+                            
+                            // Fallback to ISO8601DateFormatter
+                            let iso8601Formatter = ISO8601DateFormatter()
+                            iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                            if let date = iso8601Formatter.date(from: dateString) {
+                                return date
+                            }
+                            
+                            // If all else fails, throw an error
+                            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unable to decode date from string: \(dateString)")
+                        }
+                        
+                        let decodedResult = try decoder.decode(T.self, from: data)
+                        completion(.success(decodedResult))
+                    } catch {
+                        print("Decoding error: \(error)")
+                        if let decodingError = error as? DecodingError {
+                            print("Detailed decoding error: \(decodingError)")
+                            switch decodingError {
+                            case .dataCorrupted(let context):
+                                print("Data corrupted: \(context)")
+                            case .keyNotFound(let key, let context):
+                                print("Key '\(key)' not found: \(context)")
+                            case .typeMismatch(let type, let context):
+                                print("Type '\(type)' mismatch: \(context)")
+                            case .valueNotFound(let value, let context):
+                                print("Value '\(value)' not found: \(context)")
+                            @unknown default:
+                                print("Unknown decoding error")
+                            }
+                        }
+                        completion(.failure(error))
+                    }
+                    
                 case .failure(let error):
                     print("Request failed: \(url)")
                     print("Error: \(error.localizedDescription)")
@@ -77,29 +154,54 @@ class NetworkManager {
                             completion(.failure(timeoutError))
                             return
                         }
-                    }
-                    
-                    // Handle specific HTTP status codes
-                    if let statusCode = response.response?.statusCode {
-                        if statusCode == 401 {
-                            let authError = NSError(domain: "NetworkManager",
-                                                   code: 401,
-                                                   userInfo: [NSLocalizedDescriptionKey: "Authentication required. Please log in again."])
-                            // Clear token if authentication failed
-                            TokenManager.shared.clearToken()
-                            completion(.failure(authError))
-                            return
-                        }
                         
-                        if statusCode >= 500 {
+                        if response.response?.statusCode == 500 {
+                            // Custom server error
                             let serverError = NSError(domain: "NetworkManager",
-                                                    code: statusCode,
+                                                    code: 2,
                                                     userInfo: [NSLocalizedDescriptionKey: "Server error occurred. Please try again later."])
                             completion(.failure(serverError))
                             return
                         }
                     }
                     
+                    completion(.failure(error))
+                }
+            }
+    }
+    
+    func downloadImage(from url: String, completion: @escaping (Result<Data, Error>) -> Void) {
+        // Handle both internal API URLs and direct URLs
+        let imageUrl: String
+        if url.hasPrefix("/api/reviews/images/") {
+            // Convert internal API URL to full URL
+            imageUrl = "\(APIConstants.baseURL)\(url)"
+        } else if url.hasPrefix("http://") || url.hasPrefix("https://") {
+            // Already a full URL
+            imageUrl = url
+        } else {
+            // Assume it's a relative path and prepend base URL
+            imageUrl = "\(APIConstants.baseURL)/\(url)"
+        }
+        
+        print("Downloading image from URL: \(imageUrl)")
+        
+        var headers = HTTPHeaders()
+        if let token = TokenManager.shared.getToken() {
+            headers.add(HTTPHeader(name: "Authorization", value: "Bearer \(token)"))
+            print("Using token for image download")
+        }
+        
+        AF.request(imageUrl, headers: headers)
+            .validate()
+            .responseData { response in
+                switch response.result {
+                case .success(let data):
+                    print("Successfully downloaded image: \(data.count) bytes from \(imageUrl)")
+                    completion(.success(data))
+                case .failure(let error):
+                    print("Image download failed for URL: \(imageUrl)")
+                    print("Error: \(error)")
                     completion(.failure(error))
                 }
             }

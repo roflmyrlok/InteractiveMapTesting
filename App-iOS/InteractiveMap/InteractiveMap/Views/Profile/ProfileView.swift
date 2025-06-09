@@ -11,10 +11,9 @@ struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel: ProfileViewModel
     @State private var showLoginSheet = false
+    @State private var showCacheStatus = false
     
     init() {
-        // Initialize the view model with the auth view model that will be injected as an environment object
-        // This is a workaround since we can't directly initialize with an @EnvironmentObject
         _viewModel = StateObject(wrappedValue: ProfileViewModel(authViewModel: AuthViewModel()))
     }
     
@@ -54,6 +53,37 @@ struct ProfileView: View {
                                     .padding()
                             }
                         }
+                        
+                        Divider()
+                            .padding(.vertical)
+                        
+                        // Cache Status Section
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                showCacheStatus = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "internaldrive")
+                                        .foregroundColor(.purple)
+                                    Text("Cache Status")
+                                        .fontWeight(.medium)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.gray)
+                                        .font(.caption)
+                                }
+                                .foregroundColor(.primary)
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(10)
+                            }
+                            
+                            Text("View cached locations and reviews for offline access")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.horizontal, 20)
                         
                         Divider()
                             .padding(.vertical)
@@ -107,6 +137,37 @@ struct ProfileView: View {
                     .padding(.horizontal, 40)
                     .padding(.top, 20)
                     
+                    Divider()
+                        .padding(.vertical, 20)
+                    
+                    // Cache Status for unauthenticated users
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            showCacheStatus = true
+                        }) {
+                            HStack {
+                                Image(systemName: "internaldrive")
+                                    .foregroundColor(.purple)
+                                Text("Cache Status")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.primary)
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(10)
+                        }
+                        
+                        Text("View cached locations for offline access")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 40)
+                    
                     Spacer()
                 }
             }
@@ -116,8 +177,10 @@ struct ProfileView: View {
             AuthView()
                 .environmentObject(authViewModel)
         }
+        .sheet(isPresented: $showCacheStatus) {
+            CacheStatusView()
+        }
         .onAppear {
-            // This is important to update the view model's reference to the current authViewModel
             viewModel.updateAuthViewModel(authViewModel)
             
             if authViewModel.isAuthenticated {
@@ -139,7 +202,6 @@ struct ProfileView: View {
     }
     
     private func formatDate(_ dateString: String) -> String {
-        // Try to parse the date string
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
         
