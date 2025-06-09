@@ -6,8 +6,9 @@
 node_modules/
 dist/
 coverage/
-appsettings.Development.json
-
+appsettings.Production.json
+appsettings.Staging.json
+**/appsettings.Local.json
 
 # Add these lines to your .gitignore file
 
@@ -20,7 +21,6 @@ appsettings.Development.json
 *.pem
 *.crt
 
-appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
 
