@@ -7,13 +7,13 @@ using System.Security.Claims;
 namespace ReviewService.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/reviews/LocationInstantFeedback")]
 [Authorize]
-public class LocationInstantFeedbackController : ControllerBase
+public class ReviewsLocationInstantFeedbackController : ControllerBase
 {
     private readonly ILocationInstantFeedbackService _feedbackService;
 
-    public LocationInstantFeedbackController(ILocationInstantFeedbackService feedbackService)
+    public ReviewsLocationInstantFeedbackController(ILocationInstantFeedbackService feedbackService)
     {
         _feedbackService = feedbackService;
     }

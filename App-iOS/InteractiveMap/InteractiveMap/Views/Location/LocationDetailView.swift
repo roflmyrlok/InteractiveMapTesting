@@ -111,6 +111,12 @@ struct LocationDetailView: View {
                         }
                     }
                     
+                    // Instant Feedback Section
+                    InstantFeedbackButtons(
+                        locationId: location.id,
+                        isAuthenticated: isAuthenticated
+                    )
+                    
                     Divider()
                     
                     // Reviews section
