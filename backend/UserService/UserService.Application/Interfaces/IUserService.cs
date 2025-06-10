@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using UserService.Application.DTOs;
 
 namespace UserService.Application.Interfaces;
@@ -11,4 +14,6 @@ public interface IUserService
 	Task<UserDto> UpdateUserAsync(UpdateUserDto updateUserDto);
 	Task DeleteUserAsync(Guid id);
 	Task<bool> ValidateUserCredentialsAsync(string username, string password);
+	Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto changePasswordDto);
+	Task DeleteUserAccountAsync(Guid userId, string currentPassword);
 }

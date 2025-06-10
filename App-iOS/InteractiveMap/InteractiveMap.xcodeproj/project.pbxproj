@@ -30,32 +30,20 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		804636992DA7BC6A00349190 /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */ = {
+		80724C062DF79BCE00D250E5 /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Views/Components/AsyncImageView.swift,
 			);
 			target = 801D19212DA3B3D20087ED3B /* InteractiveMap */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		8074D4CA2DEEF84C002A5C66 /* Exceptions for "InteractiveMap" folder in "Copy Bundle Resources" phase from "InteractiveMap" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = 801D19202DA3B3D20087ED3B /* Resources */;
-			membershipExceptions = (
-				Views/Components/AsyncImageView.swift,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		801D19242DA3B3D20087ED3B /* InteractiveMap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				804636992DA7BC6A00349190 /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */,
-				8074D4CA2DEEF84C002A5C66 /* Exceptions for "InteractiveMap" folder in "Copy Bundle Resources" phase from "InteractiveMap" target */,
+				80724C062DF79BCE00D250E5 /* Exceptions for "InteractiveMap" folder in "InteractiveMap" target */,
 			);
 			path = InteractiveMap;
 			sourceTree = "<group>";

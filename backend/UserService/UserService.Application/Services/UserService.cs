@@ -1,6 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using AutoMapper;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using UserService.Application.DTOs;
 using UserService.Application.Interfaces;
 using UserService.Domain.Entities;
@@ -130,6 +134,47 @@ public class UserService : IUserService
             
         var hashedPassword = HashPassword(password);
         return user.PasswordHash == hashedPassword;
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto changePasswordDto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new DomainException($"User with ID {userId} not found");
+        }
+
+        // Verify current password
+        var currentPasswordHash = HashPassword(changePasswordDto.CurrentPassword);
+        if (user.PasswordHash != currentPasswordHash)
+        {
+            throw new DomainException("Current password is incorrect");
+        }
+
+        // Update to new password
+        user.PasswordHash = HashPassword(changePasswordDto.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+        
+        await _userRepository.UpdateAsync(user);
+        return true;
+    }
+
+    public async Task DeleteUserAccountAsync(Guid userId, string currentPassword)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new DomainException($"User with ID {userId} not found");
+        }
+
+        // Verify current password for security
+        var currentPasswordHash = HashPassword(currentPassword);
+        if (user.PasswordHash != currentPasswordHash)
+        {
+            throw new DomainException("Current password is incorrect");
+        }
+
+        await _userRepository.DeleteAsync(userId);
     }
 
     private string HashPassword(string password)

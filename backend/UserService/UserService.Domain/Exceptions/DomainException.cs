@@ -1,3 +1,5 @@
+using System;
+
 namespace UserService.Domain.Exceptions;
 
 public class DomainException : Exception

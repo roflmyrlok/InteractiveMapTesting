@@ -22,18 +22,37 @@ class NetworkManager {
         
         var finalHeaders = headers ?? HTTPHeaders()
         
-        if authenticated, let token = TokenManager.shared.getToken() {
-            finalHeaders.add(HTTPHeader(name: "Authorization", value: "Bearer \(token)"))
-            print("Using token for authenticated request: \(token.prefix(10))...")
-        } else if authenticated {
-            print("No token available for authenticated request!")
+        if authenticated {
+            if let token = TokenManager.shared.getToken() {
+                finalHeaders.add(HTTPHeader(name: "Authorization", value: "Bearer \(token)"))
+                print("DEBUG: Using token for authenticated request: \(token.prefix(20))...")
+                
+                // Debug: Check token expiry
+                if let decodedToken = decodeJWT(token: token) {
+                    print("DEBUG: Token expires at: \(decodedToken.exp)")
+                    let now = Date().timeIntervalSince1970
+                    if decodedToken.exp < now {
+                        print("WARNING: Token appears to be expired!")
+                    } else {
+                        print("DEBUG: Token is still valid for \(Int(decodedToken.exp - now)) seconds")
+                    }
+                } else {
+                    print("WARNING: Could not decode token!")
+                }
+            } else {
+                print("ERROR: No token available for authenticated request!")
+                let authError = NSError(domain: "NetworkManager", code: 401, userInfo: [NSLocalizedDescriptionKey: "No authentication token available"])
+                completion(.failure(authError))
+                return
+            }
         }
         
-        print("Making request to: \(url)")
-        print("Method: \(method.rawValue)")
+        print("DEBUG: Making request to: \(url)")
+        print("DEBUG: Method: \(method.rawValue)")
+        print("DEBUG: Headers: \(finalHeaders)")
         
         if let params = parameters {
-            print("Parameters: \(params)")
+            print("DEBUG: Parameters: \(params)")
         }
         
         AF.request(url,
@@ -43,19 +62,41 @@ class NetworkManager {
                   headers: finalHeaders)
             .validate()
             .responseData { response in
-                print("Response status code: \(String(describing: response.response?.statusCode))")
+                print("DEBUG: Response status code: \(String(describing: response.response?.statusCode))")
+                print("DEBUG: Response headers: \(String(describing: response.response?.allHeaderFields))")
                 
                 // Log raw response data for debugging
                 if let data = response.data {
-                    print("Raw response data size: \(data.count) bytes")
+                    print("DEBUG: Raw response data size: \(data.count) bytes")
                     if let jsonString = String(data: data, encoding: .utf8) {
-                        print("Raw JSON response: \(jsonString.prefix(500))...")
+                        print("DEBUG: Raw JSON response: \(jsonString.prefix(500))...")
+                    }
+                }
+                
+                // Check for specific authentication failures
+                if let httpResponse = response.response {
+                    if httpResponse.statusCode == 401 {
+                        print("ERROR: Authentication failed (401) - clearing token")
+                        TokenManager.shared.clearToken()
+                        // Notify the app that authentication failed
+                        NotificationCenter.default.post(name: NSNotification.Name("AuthenticationFailed"), object: nil)
                     }
                 }
                 
                 switch response.result {
                 case .success(let data):
-                    print("Request successful: \(url)")
+                    print("DEBUG: Request successful: \(url)")
+                    
+                    // Special handling for empty responses (204 No Content)
+                    if let httpResponse = response.response, httpResponse.statusCode == 204 {
+                        if T.self == EmptyResponse.self {
+                            completion(.success(EmptyResponse() as! T))
+                        } else {
+                            let emptyError = NSError(domain: "NetworkManager", code: 204, userInfo: [NSLocalizedDescriptionKey: "Empty response received"])
+                            completion(.failure(emptyError))
+                        }
+                        return
+                    }
                     
                     // Attempt to decode the data
                     do {
@@ -68,21 +109,31 @@ class NetworkManager {
                             
                             // Try multiple date formats
                             let formatters: [DateFormatter] = [
+                                // ISO 8601 with fractional seconds
                                 {
                                     let formatter = DateFormatter()
-                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
+                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
                                     formatter.timeZone = TimeZone(abbreviation: "UTC")
                                     return formatter
                                 }(),
+                                // ISO 8601 without fractional seconds
+                                {
+                                    let formatter = DateFormatter()
+                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+                                    formatter.timeZone = TimeZone(abbreviation: "UTC")
+                                    return formatter
+                                }(),
+                                // ISO 8601 with 'Z' timezone
                                 {
                                     let formatter = DateFormatter()
                                     formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
                                     formatter.timeZone = TimeZone(abbreviation: "UTC")
                                     return formatter
                                 }(),
+                                // ISO 8601 with fractional seconds and 'Z'
                                 {
                                     let formatter = DateFormatter()
-                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+                                    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
                                     formatter.timeZone = TimeZone(abbreviation: "UTC")
                                     return formatter
                                 }()
@@ -101,67 +152,54 @@ class NetworkManager {
                                 return date
                             }
                             
-                            // If all else fails, throw an error
-                            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unable to decode date from string: \(dateString)")
+                            // If all else fails, try without fractional seconds
+                            iso8601Formatter.formatOptions = [.withInternetDateTime]
+                            if let date = iso8601Formatter.date(from: dateString) {
+                                return date
+                            }
+                            
+                            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(dateString)")
                         }
                         
-                        let decodedResult = try decoder.decode(T.self, from: data)
-                        completion(.success(decodedResult))
+                        let decodedObject = try decoder.decode(T.self, from: data)
+                        completion(.success(decodedObject))
                     } catch {
-                        print("Decoding error: \(error)")
-                        if let decodingError = error as? DecodingError {
-                            print("Detailed decoding error: \(decodingError)")
-                            switch decodingError {
-                            case .dataCorrupted(let context):
-                                print("Data corrupted: \(context)")
-                            case .keyNotFound(let key, let context):
-                                print("Key '\(key)' not found: \(context)")
-                            case .typeMismatch(let type, let context):
-                                print("Type '\(type)' mismatch: \(context)")
-                            case .valueNotFound(let value, let context):
-                                print("Value '\(value)' not found: \(context)")
-                            @unknown default:
-                                print("Unknown decoding error")
-                            }
-                        }
+                        print("DEBUG: JSON decoding failed: \(error)")
                         completion(.failure(error))
                     }
                     
                 case .failure(let error):
-                    print("Request failed: \(url)")
-                    print("Error: \(error.localizedDescription)")
+                    print("DEBUG: Request failed: \(url) with error: \(error)")
                     
-                    // Enhanced error logging
-                    if let data = response.data, let json = String(data: data, encoding: .utf8) {
-                        print("Error response JSON: \(json)")
-                    }
-                    
-                    if let urlError = error.underlyingError as? URLError {
-                        if urlError.code == .notConnectedToInternet || urlError.code == .networkConnectionLost {
-                            // Custom network error
-                            let networkError = NSError(domain: "NetworkManager",
-                                                     code: 0,
-                                                     userInfo: [NSLocalizedDescriptionKey: "No internet connection. Please check your connection and try again."])
-                            completion(.failure(networkError))
-                            return
-                        }
-                        
-                        if urlError.code == .timedOut {
-                            // Custom timeout error
-                            let timeoutError = NSError(domain: "NetworkManager",
-                                                     code: 1,
-                                                     userInfo: [NSLocalizedDescriptionKey: "Request timed out. The server is taking too long to respond."])
-                            completion(.failure(timeoutError))
-                            return
-                        }
-                        
-                        if response.response?.statusCode == 500 {
-                            // Custom server error
-                            let serverError = NSError(domain: "NetworkManager",
-                                                    code: 2,
-                                                    userInfo: [NSLocalizedDescriptionKey: "Server error occurred. Please try again later."])
-                            completion(.failure(serverError))
-                            return
+                    // Handle specific network errors with user-friendly messages
+                    if let afError = error as? AFError {
+                        switch afError {
+                        case .sessionTaskFailed(let urlError as URLError):
+                            if urlError.code == .notConnectedToInternet {
+                                let networkError = NSError(domain: "NetworkManager",
+                                                          code: 0,
+                                                          userInfo: [NSLocalizedDescriptionKey: "No internet connection. Please check your network settings."])
+                                completion(.failure(networkError))
+                                return
+                            }
+                            
+                            if urlError.code == .timedOut {
+                                let timeoutError = NSError(domain: "NetworkManager",
+                                                         code: 1,
+                                                         userInfo: [NSLocalizedDescriptionKey: "Request timed out. The server is taking too long to respond."])
+                                completion(.failure(timeoutError))
+                                return
+                            }
+                            
+                            if response.response?.statusCode == 500 {
+                                let serverError = NSError(domain: "NetworkManager",
+                                                        code: 2,
+                                                        userInfo: [NSLocalizedDescriptionKey: "Server error occurred. Please try again later."])
+                                completion(.failure(serverError))
+                                return
+                            }
+                        default:
+                            break
                         }
                     }
                     
@@ -206,4 +244,35 @@ class NetworkManager {
                 }
             }
     }
+    
+    // Helper function to decode JWT token for debugging
+    private func decodeJWT(token: String) -> JWTPayload? {
+        let parts = token.components(separatedBy: ".")
+        guard parts.count == 3 else { return nil }
+        
+        let payload = parts[1]
+        var base64 = payload
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        
+        // Add padding if needed
+        let remainder = base64.count % 4
+        if remainder > 0 {
+            base64 += String(repeating: "=", count: 4 - remainder)
+        }
+        
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let exp = json["exp"] as? TimeInterval else {
+            return nil
+        }
+        
+        return JWTPayload(exp: exp, sub: nil)
+    }
+}
+
+// Helper struct for JWT payload
+struct JWTPayload {
+    let exp: TimeInterval
+    let sub: String?
 }
