@@ -23,78 +23,18 @@ public partial class Program
             })
             .ConfigureAppConfiguration((hostingContext, config) =>
             {
-                // Load environment variables first
                 config.AddEnvironmentVariables();
-                
-                // Then process configuration to expand environment variable references
+
                 var builtConfig = config.Build();
                 config.Sources.Clear();
                 
-                // Re-add configuration sources with environment variable expansion
                 config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                       .AddJsonFile($"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
                 
                 config.AddEnvironmentVariables();
                 
-                // Custom configuration provider to expand ${VAR} syntax
                 config.Add(new EnvironmentVariableExpansionConfigurationSource());
             });
-}
-
-// Custom configuration source to expand ${VAR} syntax in appsettings.json
-public class EnvironmentVariableExpansionConfigurationSource : IConfigurationSource
-{
-    public IConfigurationProvider Build(IConfigurationBuilder builder)
-    {
-        return new EnvironmentVariableExpansionConfigurationProvider();
-    }
-}
-
-public class EnvironmentVariableExpansionConfigurationProvider : ConfigurationProvider
-{
-    public override void Load()
-    {
-        var builder = new ConfigurationBuilder();
-        builder.AddJsonFile("appsettings.json", optional: true);
-        builder.AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true);
-        
-        var config = builder.Build();
-        
-        foreach (var kvp in config.AsEnumerable())
-        {
-            if (kvp.Value != null)
-            {
-                Data[kvp.Key] = ExpandEnvironmentVariables(kvp.Value);
-            }
-        }
-    }
-    
-    private string ExpandEnvironmentVariables(string value)
-    {
-        if (string.IsNullOrEmpty(value)) return value;
-        
-        // Replace ${VAR_NAME} with environment variable values
-        var result = value;
-        var start = 0;
-        
-        while ((start = result.IndexOf("${", start)) >= 0)
-        {
-            var end = result.IndexOf("}", start + 2);
-            if (end > start)
-            {
-                var varName = result.Substring(start + 2, end - start - 2);
-                var varValue = Environment.GetEnvironmentVariable(varName) ?? "";
-                result = result.Substring(0, start) + varValue + result.Substring(end + 1);
-                start = start + varValue.Length;
-            }
-            else
-            {
-                break;
-            }
-        }
-        
-        return result;
-    }
 }
 
 public class Startup
@@ -109,14 +49,10 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
-        services.AddLogging(configure => 
-        {
-            configure.AddConsole();
-            configure.AddDebug();
-        });
         
         var connectionString = _configuration.GetConnectionString("DefaultConnection") 
-            ?? throw new InvalidOperationException("Connection string not configured");
+                              ?? throw new InvalidOperationException("Connection string not configured");
+        
         services.AddDbContext<ReviewDbContext>(options =>
             options.UseNpgsql(connectionString));
         
@@ -125,45 +61,52 @@ public class Startup
         services.AddEndpointsApiExplorer();
         ConfigureSwagger(services);
         
+        // Register Application and Infrastructure services
         services.AddApplicationServices();
         services.AddInfrastructureServices(_configuration);
-
-        // Configure AWS credentials for S3
-        var awsAccessKey = _configuration["S3:AccessKey"];
-        var awsSecretKey = _configuration["S3:SecretKey"];
-        var awsRegion = _configuration["S3:Region"] ?? "us-east-1";
-
-        if (!string.IsNullOrEmpty(awsAccessKey) && !string.IsNullOrEmpty(awsSecretKey))
-        {
-            Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", awsAccessKey);
-            Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", awsSecretKey);
-            Environment.SetEnvironmentVariable("AWS_DEFAULT_REGION", awsRegion);
-        }
     }
 
     private void ConfigureJwtAuthentication(IServiceCollection services)
     {
         var jwtKey = _configuration["Jwt:Key"] 
-            ?? throw new InvalidOperationException("JWT Key is not configured");
+                    ?? throw new InvalidOperationException("JWT Key is not configured");
         var jwtIssuer = _configuration["Jwt:Issuer"] 
-            ?? throw new InvalidOperationException("JWT Issuer is not configured");
+                       ?? throw new InvalidOperationException("JWT Issuer is not configured");
         var jwtAudience = _configuration["Jwt:Audience"] 
-            ?? throw new InvalidOperationException("JWT Audience is not configured");
+                         ?? throw new InvalidOperationException("JWT Audience is not configured");
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
+        var key = Encoding.ASCII.GetBytes(jwtKey);
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                options.TokenValidationParameters = new TokenValidationParameters
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = jwtIssuer,
+                ValidateAudience = true,
+                ValidAudience = jwtAudience,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
                 {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtIssuer,
-                    ValidAudience = jwtAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-                };
-            });
+                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    logger.LogError("Authentication failed for {Path}. Error: {Error}", 
+                        context.Request.Path, context.Exception?.Message);
+                    return Task.CompletedTask;
+                }
+            };
+        });
     }
 
     private void ConfigureSwagger(IServiceCollection services)
@@ -177,7 +120,7 @@ public class Startup
                 Description = "JWT Authorization header using the Bearer scheme",
                 Name = "Authorization",
                 In = ParameterLocation.Header,
-                Type= SecuritySchemeType.Http,
+                Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT"
             });
@@ -199,18 +142,9 @@ public class Startup
         });
     }
 
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ReviewDbContext context, ILogger<Startup> logger)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ReviewDbContext context)
     {
-        try 
-        {
-            context.Database.Migrate();
-            logger.LogInformation("Database migration completed successfully.");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An error occurred while migrating the database.");
-            throw;
-        }
+        context.Database.Migrate();
 
         if (env.IsDevelopment())
         {
@@ -219,16 +153,54 @@ public class Startup
         }
 
         app.UseHttpsRedirection();
-        
-        app.UseCustomErrorHandling();
-        
+        app.UseMiddleware<ErrorHandlingMiddleware>();
         app.UseRouting();
+        
         app.UseAuthentication();
         app.UseAuthorization();
         
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapControllers();
+        });
+    }
+}
+
+public class EnvironmentVariableExpansionConfigurationSource : IConfigurationSource
+{
+    public IConfigurationProvider Build(IConfigurationBuilder builder)
+    {
+        return new EnvironmentVariableExpansionConfigurationProvider();
+    }
+}
+
+public class EnvironmentVariableExpansionConfigurationProvider : ConfigurationProvider
+{
+    public override void Load()
+    {
+        var builder = new ConfigurationBuilder();
+        builder.AddJsonFile("appsettings.json", optional: true);
+        builder.AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development"}.json", optional: true);
+        builder.AddEnvironmentVariables();
+        
+        var tempConfig = builder.Build();
+        
+        foreach (var kvp in tempConfig.AsEnumerable().Where(x => x.Value != null))
+        {
+            Data[kvp.Key] = ExpandEnvironmentVariables(kvp.Value!);
+        }
+    }
+    
+    private static string ExpandEnvironmentVariables(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+        
+        var pattern = @"\$\{([^}]+)\}";
+        return System.Text.RegularExpressions.Regex.Replace(value, pattern, match =>
+        {
+            var envVarName = match.Groups[1].Value;
+            return Environment.GetEnvironmentVariable(envVarName) ?? match.Value;
         });
     }
 }

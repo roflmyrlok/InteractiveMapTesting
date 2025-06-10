@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ReviewService.Application.Interfaces;
 using ReviewService.Application.Mapping;
 using ReviewService.Application.Validators;
+using ReviewService.Application.Services;
 
 namespace ReviewService.Application.Extensions;
 
@@ -12,8 +13,10 @@ public static class ServiceCollectionExtensions
 	public static IServiceCollection AddApplicationServices(this IServiceCollection services)
 	{
 		services.AddAutoMapper(typeof(MappingProfile));
-        
+
 		services.AddScoped<IReviewService, Services.ReviewService>();
+
+		services.AddScoped<ILocationInstantFeedbackService, LocationInstantFeedbackService>();
         
 		services.AddFluentValidationAutoValidation();
 		services.AddValidatorsFromAssemblyContaining<CreateReviewValidator>();
