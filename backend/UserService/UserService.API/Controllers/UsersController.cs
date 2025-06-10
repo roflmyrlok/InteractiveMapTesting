@@ -26,85 +26,101 @@ namespace UserService.API.Controllers
         }
 
         /// <summary>
-        /// Extracts user ID from JWT claims with multiple fallback mechanisms
+        /// Extracts user ID from JWT claims with comprehensive fallback mechanisms
         /// </summary>
         private Guid GetCurrentUserIdFromClaims()
         {
             try
             {
-                _logger.LogInformation("=== Extracting User ID from Claims ===");
+                _logger.LogInformation("=== Starting User ID Extraction ===");
                 _logger.LogInformation("IsAuthenticated: {IsAuth}", User.Identity?.IsAuthenticated);
-                _logger.LogInformation("Claims count: {Count}", User.Claims.Count());
+                _logger.LogInformation("Identity Name: {Name}", User.Identity?.Name);
+                _logger.LogInformation("Total Claims: {Count}", User.Claims.Count());
 
-                // Log all claims for debugging
+                // Log ALL claims for debugging
                 foreach (var claim in User.Claims)
                 {
-                    _logger.LogInformation("Available claim: Type='{Type}', Value='{Value}'", claim.Type, claim.Value);
+                    _logger.LogInformation("Claim: Type='{Type}' | Value='{Value}'", claim.Type, claim.Value);
                 }
 
                 // Try multiple claim types in order of preference
                 var claimTypes = new[]
                 {
-                    JwtRegisteredClaimNames.Sub,           // "sub"
-                    ClaimTypes.NameIdentifier,             // Microsoft claim
-                    "sub",                                 // Direct string
-                    "user_id",                             // Alternative
-                    "userId"                               // CamelCase
+                    JwtRegisteredClaimNames.Sub,                    // "sub"
+                    ClaimTypes.NameIdentifier,                      // "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"  
+                    "sub",                                          // Direct "sub" string
+                    "user_id",                                      // Alternative
+                    "userId",                                       // CamelCase
+                    "userid",                                       // Lowercase
+                    JwtRegisteredClaimNames.NameId,                 // "nameid"
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"  // Full URL
                 };
 
                 string userIdValue = null;
                 string foundClaimType = null;
 
+                // Try each claim type
                 foreach (var claimType in claimTypes)
                 {
+                    _logger.LogDebug("Trying claim type: '{ClaimType}'", claimType);
                     var claim = User.FindFirst(claimType);
-                    if (claim != null && !string.IsNullOrWhiteSpace(claim.Value))
+                    
+                    if (claim != null)
                     {
-                        userIdValue = claim.Value;
-                        foundClaimType = claimType;
-                        _logger.LogInformation("Found user ID '{UserId}' in claim type '{ClaimType}'", userIdValue, claimType);
-                        break;
+                        _logger.LogInformation("Found claim '{ClaimType}' with value '{Value}'", claimType, claim.Value);
+                        if (!string.IsNullOrWhiteSpace(claim.Value))
+                        {
+                            userIdValue = claim.Value;
+                            foundClaimType = claimType;
+                            break;
+                        }
                     }
                     else
                     {
-                        _logger.LogWarning("Claim type '{ClaimType}' not found or empty", claimType);
+                        _logger.LogDebug("Claim type '{ClaimType}' not found", claimType);
                     }
                 }
 
+                // Fallback: Search for any claim containing user identifier keywords
                 if (string.IsNullOrWhiteSpace(userIdValue))
                 {
-                    // Last resort - search all claims for anything that looks like a user ID
-                    var userClaim = User.Claims.FirstOrDefault(c =>
+                    _logger.LogWarning("Standard claims not found, trying fallback search...");
+                    
+                    var fallbackClaim = User.Claims.FirstOrDefault(c =>
                         c.Type.Contains("nameidentifier", StringComparison.OrdinalIgnoreCase) ||
                         c.Type.Contains("userid", StringComparison.OrdinalIgnoreCase) ||
-                        c.Type.Contains("sub", StringComparison.OrdinalIgnoreCase));
+                        c.Type.Contains("sub", StringComparison.OrdinalIgnoreCase) ||
+                        c.Type.EndsWith("sub", StringComparison.OrdinalIgnoreCase));
 
-                    if (userClaim != null && !string.IsNullOrWhiteSpace(userClaim.Value))
+                    if (fallbackClaim != null && !string.IsNullOrWhiteSpace(fallbackClaim.Value))
                     {
-                        userIdValue = userClaim.Value;
-                        foundClaimType = userClaim.Type;
-                        _logger.LogInformation("Found user ID '{UserId}' in fallback claim '{ClaimType}'", userIdValue, foundClaimType);
+                        userIdValue = fallbackClaim.Value;
+                        foundClaimType = fallbackClaim.Type;
+                        _logger.LogInformation("Found user ID via fallback: '{ClaimType}' = '{Value}'", foundClaimType, userIdValue);
                     }
                 }
 
+                // Final check
                 if (string.IsNullOrWhiteSpace(userIdValue))
                 {
-                    _logger.LogError("CRITICAL: No user ID found in any claim!");
+                    var allClaims = string.Join(" | ", User.Claims.Select(c => $"{c.Type}={c.Value}"));
+                    _logger.LogError("CRITICAL: No user ID found in any claim! All claims: {AllClaims}", allClaims);
                     throw new UnauthorizedAccessException("User ID not found in authentication token");
                 }
 
+                // Parse as GUID
                 if (!Guid.TryParse(userIdValue, out var userId))
                 {
                     _logger.LogError("User ID '{UserIdValue}' from claim '{ClaimType}' is not a valid GUID", userIdValue, foundClaimType);
-                    throw new UnauthorizedAccessException("Invalid user ID format in authentication token");
+                    throw new UnauthorizedAccessException($"Invalid user ID format: {userIdValue}");
                 }
 
-                _logger.LogInformation("Successfully extracted and parsed user ID: {UserId}", userId);
+                _logger.LogInformation("Successfully extracted user ID: {UserId} from claim: {ClaimType}", userId, foundClaimType);
                 return userId;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is UnauthorizedAccessException))
             {
-                _logger.LogError(ex, "Error extracting user ID from claims");
+                _logger.LogError(ex, "Unexpected error extracting user ID from claims");
                 throw new UnauthorizedAccessException("Failed to extract user ID from authentication token", ex);
             }
         }
@@ -115,6 +131,7 @@ namespace UserService.API.Controllers
         {
             try
             {
+                _logger.LogInformation("GetAll users called");
                 var users = await _userService.GetAllUsersAsync();
                 return Ok(users);
             }
@@ -130,16 +147,18 @@ namespace UserService.API.Controllers
             }
         }
 
+        // FIX: Added both routes for current user
         [HttpGet("current")]
+        [HttpGet("me")]  // iOS app calls this route
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
             try
             {
-                _logger.LogInformation("GetCurrentUser called");
+                _logger.LogInformation("GetCurrentUser called via route: {Path}", Request.Path);
 
                 var userId = GetCurrentUserIdFromClaims();
-                _logger.LogInformation("Fetching current user information for user: {UserId}", userId);
+                _logger.LogInformation("Fetching user information for ID: {UserId}", userId);
                 
                 var user = await _userService.GetUserByIdAsync(userId);
                 if (user == null)
@@ -148,7 +167,7 @@ namespace UserService.API.Controllers
                     return NotFound(new { message = "User not found" });
                 }
 
-                _logger.LogInformation("Successfully retrieved user information for: {Username}", user.Username);
+                _logger.LogInformation("Successfully retrieved user: {Username} ({Email})", user.Username, user.Email);
                 return Ok(user);
             }
             catch (UnauthorizedAccessException ex)
@@ -334,15 +353,15 @@ namespace UserService.API.Controllers
             }
         }
 
-        // FIX: Changed from POST to PUT and added POST as well for compatibility
+        // FIX: Support both PUT and POST for iOS compatibility
         [HttpPut("change-password")]
-        [HttpPost("change-password")]  // Adding POST for iOS compatibility
+        [HttpPost("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
         {
             try
             {
-                _logger.LogInformation("ChangePassword called via {Method}", Request.Method);
+                _logger.LogInformation("ChangePassword called via {Method} method", Request.Method);
 
                 var userId = GetCurrentUserIdFromClaims();
                 _logger.LogInformation("Attempting to change password for user: {UserId}", userId);
@@ -375,15 +394,15 @@ namespace UserService.API.Controllers
             }
         }
 
-        // FIX: Adding POST as well for iOS compatibility
+        // FIX: Support both DELETE and POST for iOS compatibility
         [HttpDelete("delete-account")]
-        [HttpPost("delete-account")]  // Adding POST for iOS compatibility
+        [HttpPost("delete-account")]
         [Authorize]
         public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountDto deleteAccountDto)
         {
             try
             {
-                _logger.LogInformation("DeleteAccount called via {Method}", Request.Method);
+                _logger.LogInformation("DeleteAccount called via {Method} method", Request.Method);
 
                 var userId = GetCurrentUserIdFromClaims();
                 _logger.LogInformation("Attempting to delete account for user: {UserId}", userId);

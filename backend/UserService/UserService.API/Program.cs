@@ -1,6 +1,7 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -65,8 +66,6 @@ public class Startup
 		services.AddScoped<JwtAuthenticationService>();
 	}
 
-	// Add this to your UserService Program.cs in the ConfigureJwtAuthentication method
-
 	private void ConfigureJwtAuthentication(IServiceCollection services)
 	{
 		var jwtKey = _configuration["Jwt:Key"] 
@@ -88,7 +87,10 @@ public class Startup
 					ValidIssuer = jwtIssuer,
 					ValidAudience = jwtAudience,
 					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-					ClockSkew = TimeSpan.Zero
+					ClockSkew = TimeSpan.Zero,
+					// FIX: Add claim mapping to ensure standard claims are mapped correctly
+					RoleClaimType = ClaimTypes.Role,
+					NameClaimType = ClaimTypes.Name
 				};
 
 				options.Events = new JwtBearerEvents
@@ -118,8 +120,26 @@ public class Startup
 					OnTokenValidated = context =>
 					{
 						var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-						var userId = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+						
+						// FIX: Enhanced token validation logging with multiple claim lookups
+						var subClaim = context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+						var nameIdClaim = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+						var userIdClaim = context.Principal?.FindFirst("user_id")?.Value;
+						
+						var userId = subClaim ?? nameIdClaim ?? userIdClaim ?? "UNKNOWN";
+						
 						logger.LogInformation("Token validated successfully for user: {UserId}", userId);
+						
+						// Log all claims for debugging if user ID is null
+						if (string.IsNullOrEmpty(subClaim))
+						{
+							logger.LogWarning("Sub claim is null/empty. All claims:");
+							foreach (var claim in context.Principal?.Claims ?? Enumerable.Empty<Claim>())
+							{
+								logger.LogWarning("  {Type} = {Value}", claim.Type, claim.Value);
+							}
+						}
+						
 						return Task.CompletedTask;
 					},
 					OnMessageReceived = context =>
@@ -133,6 +153,13 @@ public class Startup
 							var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
 							var hasBearerPrefix = authHeader?.StartsWith("Bearer ") == true;
 							logger.LogDebug("Authorization header format correct: {HasBearer}", hasBearerPrefix);
+							
+							// FIX: Log partial token for debugging (first 20 chars only for security)
+							if (hasBearerPrefix && authHeader.Length > 7)
+							{
+								var tokenStart = authHeader.Substring(7, Math.Min(20, authHeader.Length - 7));
+								logger.LogDebug("Token starts with: {TokenStart}...", tokenStart);
+							}
 						}
                     
 						return Task.CompletedTask;
@@ -142,6 +169,13 @@ public class Startup
 						var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
 						logger.LogWarning("Authentication challenge triggered for {Path}. Error: {Error}", 
 							context.Request.Path, context.Error);
+						
+						// FIX: Log more details about why authentication failed
+						if (!string.IsNullOrEmpty(context.ErrorDescription))
+						{
+							logger.LogWarning("Error description: {ErrorDescription}", context.ErrorDescription);
+						}
+						
 						return Task.CompletedTask;
 					}
 				};
@@ -194,8 +228,11 @@ public class Startup
 		app.UseHttpsRedirection();
 		app.UseMiddleware<ErrorHandlingMiddleware>();
 		app.UseRouting();
+		
+		// FIX: Ensure proper order of middleware
 		app.UseAuthentication();
 		app.UseAuthorization();
+		
 		app.UseEndpoints(endpoints =>
 		{
 			endpoints.MapControllers();
