@@ -1,3 +1,6 @@
+using System;
+using System.Threading.Tasks;
+
 namespace ReviewService.Application.Interfaces;
 
 public interface ILocationService

@@ -1,29 +1,32 @@
+using System;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReviewService.Application.DTOs;
 using ReviewService.Application.Interfaces;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace ReviewService.API.Controllers;
 
 [ApiController]
-[Route("api/reviews/[controller]")] // FIXED: Changed from "api/[controller]" to "api/reviews/[controller]"
+[Route("api/reviews/LocationInstantFeedback")]
 [Authorize]
-public class LocationInstantFeedbackController : ControllerBase
+public class ReviewsLocationInstantFeedbackController : ControllerBase
 {
     private readonly ILocationInstantFeedbackService _feedbackService;
 
-    public LocationInstantFeedbackController(ILocationInstantFeedbackService feedbackService)
+    public ReviewsLocationInstantFeedbackController(ILocationInstantFeedbackService feedbackService)
     {
         _feedbackService = feedbackService;
     }
 
     /// <summary>
-    /// Submit instant feedback for a location (creates new or updates existing)
+    /// Submit review-based instant feedback for a location (creates new or updates existing)
+    /// This endpoint is used for review-related instant feedback submissions
     /// </summary>
     /// <param name="request">Feedback submission request</param>
     /// <returns>Success or error result</returns>
-    [HttpPost("submit")]
+    [HttpPost("submit-review")]
     public async Task<IActionResult> SubmitInstantFeedback([FromBody] SubmitInstantFeedbackRequest request)
     {
         var userId = GetUserIdFromToken();
@@ -41,16 +44,16 @@ public class LocationInstantFeedbackController : ControllerBase
             };
 
             await _feedbackService.SubmitInstantFeedbackAsync(userId, feedbackDto);
-            return Ok(new { message = "Instant feedback submitted successfully" });
+            return Ok(new { message = "Review instant feedback submitted successfully" });
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return StatusCode(500, new { StatusCode = 500, Message = "An unexpected error occurred." });
         }
     }
 
     /// <summary>
-    /// Get detailed instant status for a specific location
+    /// Get detailed instant status for a specific location (review context)
     /// </summary>
     /// <param name="locationId">Location ID</param>
     /// <returns>Detailed location instant status</returns>
@@ -70,12 +73,12 @@ public class LocationInstantFeedbackController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return StatusCode(500, new { StatusCode = 500, Message = "An unexpected error occurred." });
         }
     }
 
     /// <summary>
-    /// Get instant status summaries for multiple locations (for map display)
+    /// Get instant status summaries for multiple locations (for map display - review context)
     /// </summary>
     /// <param name="request">List of location IDs</param>
     /// <returns>List of location status summaries with color codes</returns>
@@ -94,7 +97,7 @@ public class LocationInstantFeedbackController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return StatusCode(500, new { StatusCode = 500, Message = "An unexpected error occurred." });
         }
     }
 

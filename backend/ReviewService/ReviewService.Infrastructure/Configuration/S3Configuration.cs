@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ReviewService.Infrastructure.Configuration;
 
 public class S3Configuration

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using ReviewService.Domain.Enums;
 
 namespace ReviewService.Application.DTOs;

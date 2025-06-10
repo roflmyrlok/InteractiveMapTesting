@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace ReviewService.Domain.Entities;
 
 public class Review

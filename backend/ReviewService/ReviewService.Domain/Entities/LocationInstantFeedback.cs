@@ -1,3 +1,4 @@
+using System;
 using ReviewService.Domain.Enums;
 
 namespace ReviewService.Domain.Entities;

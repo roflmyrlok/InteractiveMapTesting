@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AutoMapper;
 using ReviewService.Application.DTOs;
 using ReviewService.Domain.Entities;

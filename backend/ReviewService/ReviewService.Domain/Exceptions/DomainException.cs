@@ -1,3 +1,5 @@
+using System;
+
 namespace ReviewService.Domain.Exceptions;
 
 public class DomainException : Exception
